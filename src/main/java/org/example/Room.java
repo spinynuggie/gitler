@@ -1,42 +1,33 @@
 package org.example;
 
-import java.util.List;
-import java.util.Random;
 import java.util.Scanner;
 
-public class Room {
+public abstract class Room {
     public final int id;
     public final String name;
-    private final List<String> questions;
-    private final EvaluationStrategy strategy;
-    private final Random rng = new Random();
+    private final EvaluationStrategy evaluator;
 
-    private Room(int id, String name, List<String> questions, EvaluationStrategy strategy) {
+    protected Room(int id, String name, EvaluationStrategy evaluator) {
         this.id = id;
         this.name = name;
-        this.questions = questions;
-        this.strategy = strategy;
+        this.evaluator = evaluator;
     }
 
-    public static Room of(int id,
-                          String name,
-                          List<String> questions,
-                          EvaluationStrategy strategy) {
-        return new Room(id, name, questions, strategy);
-    }
+    protected abstract String getVraag();
 
     public boolean play(Scanner scanner) {
-        // pick a random question…
-        String q = questions.get(rng.nextInt(questions.size()));
-        System.out.println("\n👾 Monster verschijnt in “" + name + "”!");
-        System.out.println("— " + q + " —");
+        System.out.println("\n— " + getVraag() + " —");
+        String antwoord = scanner.nextLine().trim();
+        String fb = evaluator.evaluate(getVraag(), antwoord);
+        System.out.println(fb);
+        String[] parts = fb.split(":", 2);
+        if (parts.length > 1) System.out.println(parts[1].trim());
+        return parts[0].equalsIgnoreCase("GOED");
+    }
 
-        String answer = scanner.nextLine().trim();
-        // get the full AI feedback as String
-        String feedback = strategy.evaluate(q, answer);
-        // show the user what Gemini said
-        System.out.println(feedback);
-        // return true if it starts with “GOED”
-        return feedback.startsWith("GOED");
+    public static Room of(int id, String name, String vraag, EvaluationStrategy evaluator) {
+        return new Room(id, name, evaluator) {
+            @Override protected String getVraag() { return vraag; }
+        };
     }
 }
