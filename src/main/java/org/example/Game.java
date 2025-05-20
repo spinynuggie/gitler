@@ -4,77 +4,59 @@ import java.util.*;
 
 public class Game {
     public static void start(Scanner scanner, Player player) {
-        EvaluationStrategy gemini = new GeminiEvaluationStrategy();
-        List<Room> rooms = List.of(
-                Room.of(1, "Sprint Planning",   "Wat is de rol van de PO?", gemini),
-                Room.of(2, "Daily Scrum",       "Wat bespreek je tijdens een Daily Scrum?", gemini),
-                Room.of(3, "Sprint Review",     "Wat toon je tijdens de Sprint Review?", gemini)
-        );
-
-        Map<Integer, Room> roomMap = new HashMap<>();
-        for (Room r : rooms) roomMap.put(r.id, r);
+        GameMap map = new GameMap();
+        Random rng = new Random();
+        int pos = player.currentRoom > 0 ? player.currentRoom : 7; // choose a sensible start
 
         while (true) {
-            System.out.println("\n🎯 Kies een kamer (of typ 'exit'):");
-            for (Room r : rooms) {
-                boolean done = player.completedRooms.contains(r.id);
-                String mark = done ? "✓" : " ";
-                System.out.printf("  %d. [%s] %s%n",
-                        r.id, mark, r.name);
-            }
-            System.out.printf("%n📍 HP: %d | Score: %d%n",
-                    player.hp, player.score);
-            System.out.print("Keuze: ");
+            System.out.println("\n🗺️  Jouw map:");
+            map.viewMap(pos);
+            System.out.printf("📍 Positie: %d | HP: %d | Score: %d%n",
+                    pos, player.hp, player.score);
 
-            String input = scanner.nextLine().trim();
-            if (input.equalsIgnoreCase("exit")) {
-                System.out.println("↩️  Terug naar hoofdmenu...");
-                return;
-            }
+            System.out.print("Move w/a/s/d of typ 'exit': ");
+            String in = scanner.nextLine().trim().toLowerCase();
+            if (in.equals("exit")) return;
 
-            int roomId;
-            try {
-                roomId = Integer.parseInt(input);
-            } catch (NumberFormatException e) {
-                System.out.println("⚠️ Ongeldige invoer. Probeer opnieuw.");
-                continue;
-            }
-
-            int highestDone = player.completedRooms.isEmpty()
-                    ? 0
-                    : Collections.max(player.completedRooms);
-            int maxAllowed = highestDone + 1;
-            if (roomId > maxAllowed) {
-                System.out.println("🔒 Kamer " + roomId
-                        + " is vergrendeld. Voltooi eerst kamer " + highestDone + ".");
-                continue;
-            }
-
-            if (player.completedRooms.contains(roomId)) {
-                System.out.print("⚠️ Kamer " + roomId
-                        + " al voltooid. Opnieuw? (y/n): ");
-                if (!scanner.nextLine().trim().equalsIgnoreCase("y")) {
-                    System.out.println("→ Terug naar kamer-keuze.");
+            int row = (pos-1)/5, col = (pos-1)%5;
+            switch (in) {
+                case "w": row = Math.max(0, row-1); break;
+                case "s": row = Math.min(4, row+1); break;
+                case "a": col = Math.max(0, col-1); break;
+                case "d": col = Math.min(4, col+1); break;
+                default:
+                    System.out.println("⚠️ Ongeldige richting!");
                     continue;
-                }
+            }
+            pos = row*5 + col + 1;
+
+            Room room = map.getRoom(pos);
+            if (room == null) {
+                System.out.println("🌳 Je loopt door een lege gang. Niets gebeurt.");
+                continue;
             }
 
-            boolean correct = roomMap.get(roomId).play(scanner);
-            if (correct) {
-                player.currentRoom = roomId;
-                player.score += 10;
-                player.completedRooms.add(roomId);
-                System.out.println("✅ Goed! +10 score");
-                System.out.printf("Voortgang: kamer %d | Score: %d | HP: %d%n",
-                        player.currentRoom, player.score, player.hp);
+            // 50% chance op encounter
+            if (rng.nextDouble() < 0.5) {
+                boolean win = room.play(scanner);
+                if (win) {
+                    if (!player.completedRooms.contains(pos)) {
+                        player.score += 10;
+                        player.completedRooms.add(pos);
+                    }
+                    System.out.println("🏆 Monster verslagen! +10 score");
+                } else {
+                    player.hp--;
+                    System.out.println("💥 Je bent geraakt! -1 HP");
+                    if (player.hp <= 0) {
+                        System.out.println("💀 Je bent dood. Game Over!");
+                        return;
+                    }
+                }
+                player.currentRoom = pos;
                 SaveManager.save(player);
             } else {
-                player.hp--;
-                System.out.println("❌ Fout! -1 HP!");
-                if (player.hp <= 0) {
-                    System.out.println("\n💀 Je hebt geen HP meer. Game over!");
-                    return;
-                }
+                System.out.println("😌 Geen gevaar hier, je loopt door...");
             }
         }
     }

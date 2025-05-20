@@ -1,33 +1,42 @@
 package org.example;
 
+import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 
-public abstract class Room {
+public class Room {
     public final int id;
     public final String name;
-    private final EvaluationStrategy evaluator;
+    private final List<String> questions;
+    private final EvaluationStrategy strategy;
+    private final Random rng = new Random();
 
-    protected Room(int id, String name, EvaluationStrategy evaluator) {
+    private Room(int id, String name, List<String> questions, EvaluationStrategy strategy) {
         this.id = id;
         this.name = name;
-        this.evaluator = evaluator;
+        this.questions = questions;
+        this.strategy = strategy;
     }
 
-    protected abstract String getVraag();
+    public static Room of(int id,
+                          String name,
+                          List<String> questions,
+                          EvaluationStrategy strategy) {
+        return new Room(id, name, questions, strategy);
+    }
 
     public boolean play(Scanner scanner) {
-        System.out.println("\n— " + getVraag() + " —");
-        String antwoord = scanner.nextLine().trim();
-        String fb = evaluator.evaluate(getVraag(), antwoord);
-        System.out.println(fb);
-        String[] parts = fb.split(":", 2);
-        if (parts.length > 1) System.out.println(parts[1].trim());
-        return parts[0].equalsIgnoreCase("GOED");
-    }
+        // pick a random question…
+        String q = questions.get(rng.nextInt(questions.size()));
+        System.out.println("\n👾 Monster verschijnt in “" + name + "”!");
+        System.out.println("— " + q + " —");
 
-    public static Room of(int id, String name, String vraag, EvaluationStrategy evaluator) {
-        return new Room(id, name, evaluator) {
-            @Override protected String getVraag() { return vraag; }
-        };
+        String answer = scanner.nextLine().trim();
+        // get the full AI feedback as String
+        String feedback = strategy.evaluate(q, answer);
+        // show the user what Gemini said
+        System.out.println(feedback);
+        // return true if it starts with “GOED”
+        return feedback.startsWith("GOED");
     }
 }
