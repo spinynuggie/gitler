@@ -2,10 +2,7 @@ package org.example;
 
 import java.util.*;
 
-public class GameLoop {
-    /**
-     * The old Main.startGameLoop logic, now in its own class.
-     */
+public class Game {
     public static void start(Scanner scanner, Player player) {
         EvaluationStrategy gemini = new GeminiEvaluationStrategy();
         List<Room> rooms = List.of(

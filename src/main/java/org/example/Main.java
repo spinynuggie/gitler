@@ -13,7 +13,7 @@ public class Main {
 
         while (true) {
             player = TitleScreen.show(scanner, player);
-            GameLoop.start(scanner, player);
+            Game.start(scanner, player);
         }
     }
 }
