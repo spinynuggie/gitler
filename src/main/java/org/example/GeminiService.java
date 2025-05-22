@@ -31,7 +31,7 @@ public class GeminiService {
 
     /**
      * Send vraag+antwoord to Gemini and return either
-     * "GOED: <one-sentence>" of "FOUT: <one-sentence>"
+     * "GOED: <one-sentence>" or "FOUT: <one-sentence>"
      */
     public static String evaluate(String vraag, String antwoord) {
         try {
