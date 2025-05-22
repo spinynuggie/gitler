@@ -5,8 +5,8 @@ public class AttackStrategy implements HinderingStrategy {
     public void hinder(Player player, int strength) {
         // subtract exactly `strength` (never below 0)
         player.hp = Math.max(player.hp - strength, 0);
-        System.out.println("Monster attacks! Player loses "
+        System.out.println("Het monster valt aan! Je verliest "
                 + strength
-                + " HP. (Now at " + player.hp + " HP)");
+                + " HP. (Nu heb je nog " + player.hp + " HP)");
     }
 }

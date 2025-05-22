@@ -12,9 +12,6 @@ public class Game {
                 new AttackStrategy()
         );
 
-        // remember the player's HP at the very start of this session
-        final int sessionStartHp = player.hp;
-
         List<Room> rooms = List.of(
                 Room.of(1, "Sprint Planning",   "Wat is de rol van de PO?",    gemini),
                 Room.of(2, "Daily Scrum",       "Wat bespreek je tijdens een Daily Scrum?", gemini),
@@ -37,8 +34,8 @@ public class Game {
             String input = scanner.nextLine().trim();
             if (input.equalsIgnoreCase("exit")) {
                 System.out.println("↩️  Terug naar hoofdmenu...");
-                // reset HP back to what it was when this session started
-                player.hp = sessionStartHp;
+                // ensure we persist whichever HP the player currently has
+                SaveManager.save(player);
                 return;
             }
 
@@ -72,7 +69,7 @@ public class Game {
             boolean correct = roomMap.get(roomId).play(scanner);
             if (correct) {
                 player.currentRoom = roomId;
-                player.score += 10;
+                player.score       += 10;
                 player.completedRooms.add(roomId);
                 System.out.println("✅ Goed! +10 score");
                 System.out.printf("Voortgang: kamer %d | Score: %d | HP: %d%n",
@@ -82,11 +79,13 @@ public class Game {
             } else {
                 // monster attacks using your AttackStrategy
                 monster.hinder(player);
+                // immediately persist the new HP
+                SaveManager.save(player);
 
                 if (player.hp <= 0) {
                     System.out.println("\n💀 Je hebt geen HP meer. Game over!");
-                    // reset HP back to session start for next time
-                    player.hp = sessionStartHp;
+                    // and save the 0-HP state
+                    SaveManager.save(player);
                     return;
                 }
             }
