@@ -3,8 +3,6 @@ package org.example;
 import java.util.Scanner;
 
 public class TitleScreen {
-    private static final int STARTING_HP = 10;  // match your Main.java default
-
     // show the main menu and return the (possibly new) Player
     public static Player show(Scanner scanner, Player player) {
         final String BOLD  = "\u001B[1m";
@@ -35,32 +33,22 @@ public class TitleScreen {
             String keuze = scanner.nextLine().trim();
             switch (keuze) {
                 case "1":
-                    // start the game with whatever Player we currently have
                     return player;
-
                 case "2":
                     SaveManager.save(player);
                     System.out.println("📂 Game opgeslagen!");
                     break;
-
                 case "3":
                     System.out.print("⚠️ Weet je zeker dat je reset wilt? (y/n): ");
                     if (scanner.nextLine().trim().equalsIgnoreCase("y")) {
-                        // delete old save
                         SaveManager.reset();
-                        // re-initialize to starting HP
-                        player = new Player(1, STARTING_HP);
-                        // immediately save this fresh state
-                        SaveManager.save(player);
-                        System.out.println("🗑️  Save gewist en nieuwe speler gestart met "
-                                + player.hp + " HP!");
+                        player = new Player(1, 3);
+                        System.out.println("🗑️  Save gewist en nieuwe speler gestart!");
                     }
                     break;
-
                 case "4":
                     Settings.show(scanner);
                     break;
-
                 case "5":
                     System.out.println("\n🕹️  Controls:");
                     System.out.println(" - Typ het kamernummer om te spelen");
@@ -68,18 +56,14 @@ public class TitleScreen {
                     System.out.println(" - Typ 'reset' om opnieuw te beginnen");
                     System.out.println(" - Typ 'exit' om terug te gaan naar dit menu\n");
                     break;
-
                 case "6":
                     System.out.println("\n❓ Help:");
                     System.out.println("Beantwoord in elke kamer de vraag zo kort mogelijk.");
                     System.out.println("De AI geeft GOED of FOUT met één zin toelichting.\n");
                     break;
-
                 case "7":
                     System.out.println("👋 Tot ziens!");
                     System.exit(0);
-                    break;  // unreachable
-
                 default:
                     System.out.println("⚠️ Ongeldige keuze. Probeer opnieuw.");
             }
