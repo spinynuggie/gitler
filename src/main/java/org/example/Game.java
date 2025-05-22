@@ -5,10 +5,14 @@ import java.util.*;
 public class Game {
     public static void start(Scanner scanner, Player player) {
         EvaluationStrategy gemini = new GeminiEvaluationStrategy();
+        String vraag1 = "Wat is de rol van de PO?";
+        String vraag2 = "Wat bespreek je tijdens een Daily Scrum?";
+        String vraag3 = "Wat toon je tijdens de Sprint Review?";
+
         List<Room> rooms = List.of(
-                Room.of(1, "Sprint Planning",   "Wat is de rol van de PO?", gemini),
-                Room.of(2, "Daily Scrum",       "Wat bespreek je tijdens een Daily Scrum?", gemini),
-                Room.of(3, "Sprint Review",     "Wat toon je tijdens de Sprint Review?", gemini)
+                Room.of(1, "Sprint Planning", vraag1, gemini),
+                Room.of(2, "Daily Scrum", vraag2, gemini),
+                Room.of(3, "Sprint Review", vraag3, gemini)
         );
 
         Map<Integer, Room> roomMap = new HashMap<>();
@@ -68,14 +72,28 @@ public class Game {
                 System.out.printf("Voortgang: kamer %d | Score: %d | HP: %d%n",
                         player.currentRoom, player.score, player.hp);
                 SaveManager.save(player);
-            } else {
-                player.hp--;
-                System.out.println("❌ Fout! -1 HP!");
-                if (player.hp <= 0) {
-                    System.out.println("\n💀 Je hebt geen HP meer. Game over!");
-                    return;
+            }  else {
+            player.hp--;
+            System.out.println("❌ Fout! -1 HP!");
+
+            String vraag = switch (roomId) {
+                case 1 -> vraag1;
+                case 2 -> vraag2;
+                case 3 -> vraag3;
+                default -> null;
+            };
+                HintSystem.maybeGiveHint(scanner, vraag);
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
+
+            if (player.hp <= 0) {
+                System.out.println("\n💀 Je hebt geen HP meer. Game over!");
+                return;
             }
+        }
         }
     }
 }
