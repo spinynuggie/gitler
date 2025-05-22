@@ -8,7 +8,7 @@ public class Main {
 
         Player player = SaveManager.load();
         if (player == null) {
-            player = new Player(1, 3);
+            player = new Player(1, 101);
         }
 
         while (true) {
