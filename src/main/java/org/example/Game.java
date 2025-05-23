@@ -9,6 +9,13 @@ public class Game {
         String vraag2 = "Wat bespreek je tijdens een Daily Scrum?";
         String vraag3 = "Wat toon je tijdens de Sprint Review?";
 
+        Monster monster = new Monster(
+                "Goblin",           // name
+                3,                  // strength
+                10,                 // monster health
+                new AttackStrategy()
+        );
+
         List<Room> rooms = List.of(
                 Room.of(1, "Sprint Planning", vraag1, gemini),
                 Room.of(2, "Daily Scrum", vraag2, gemini),
@@ -23,16 +30,15 @@ public class Game {
             for (Room r : rooms) {
                 boolean done = player.completedRooms.contains(r.id);
                 String mark = done ? "✓" : " ";
-                System.out.printf("  %d. [%s] %s%n",
-                        r.id, mark, r.name);
+                System.out.printf("  %d. [%s] %s%n", r.id, mark, r.name);
             }
-            System.out.printf("%n📍 HP: %d | Score: %d%n",
-                    player.hp, player.score);
+            System.out.printf("%n📍 HP: %d | Score: %d%n", player.hp, player.score);
             System.out.print("Keuze: ");
 
             String input = scanner.nextLine().trim();
             if (input.equalsIgnoreCase("exit")) {
                 System.out.println("↩️  Terug naar hoofdmenu...");
+                SaveManager.save(player);
                 return;
             }
 
@@ -66,34 +72,42 @@ public class Game {
             boolean correct = roomMap.get(roomId).play(scanner);
             if (correct) {
                 player.currentRoom = roomId;
-                player.score += 10;
+                player.score       += 10;
                 player.completedRooms.add(roomId);
                 System.out.println("✅ Goed! +10 score");
                 System.out.printf("Voortgang: kamer %d | Score: %d | HP: %d%n",
                         player.currentRoom, player.score, player.hp);
                 SaveManager.save(player);
-            }  else {
-            player.hp--;
-            System.out.println("❌ Fout! -1 HP!");
+            } else {
+                player.hp--;
+                System.out.println("❌ Fout! -1 HP!");
 
-            String vraag = switch (roomId) {
-                case 1 -> vraag1;
-                case 2 -> vraag2;
-                case 3 -> vraag3;
-                default -> null;
-            };
+                // Monster attacks
+                monster.hinder(player);
+
+                // Give hint
+                String vraag = switch (roomId) {
+                    case 1 -> vraag1;
+                    case 2 -> vraag2;
+                    case 3 -> vraag3;
+                    default -> null;
+                };
                 HintSystem.maybeGiveHint(scanner, vraag);
+
+                SaveManager.save(player);
+
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
 
-            if (player.hp <= 0) {
-                System.out.println("\n💀 Je hebt geen HP meer. Game over!");
-                return;
+                if (player.hp <= 0) {
+                    System.out.println("\n💀 Je hebt geen HP meer. Game over!");
+                    SaveManager.save(player);
+                    return;
+                }
             }
-        }
         }
     }
 }
