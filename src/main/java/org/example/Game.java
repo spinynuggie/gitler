@@ -5,6 +5,10 @@ import java.util.*;
 public class Game {
     public static void start(Scanner scanner, Player player) {
         EvaluationStrategy gemini = new GeminiEvaluationStrategy();
+        String vraag1 = "Wat is de rol van de PO?";
+        String vraag2 = "Wat bespreek je tijdens een Daily Scrum?";
+        String vraag3 = "Wat toon je tijdens de Sprint Review?";
+
         Monster monster = new Monster(
                 "Goblin",           // name
                 3,                  // strength
@@ -13,9 +17,9 @@ public class Game {
         );
 
         List<Room> rooms = List.of(
-                Room.of(1, "Sprint Planning",   "Wat is de rol van de PO?",    gemini),
-                Room.of(2, "Daily Scrum",       "Wat bespreek je tijdens een Daily Scrum?", gemini),
-                Room.of(3, "Sprint Review",     "Wat toon je tijdens de Sprint Review?",    gemini)
+                Room.of(1, "Sprint Planning", vraag1, gemini),
+                Room.of(2, "Daily Scrum", vraag2, gemini),
+                Room.of(3, "Sprint Review", vraag3, gemini)
         );
 
         Map<Integer, Room> roomMap = new HashMap<>();
@@ -34,7 +38,6 @@ public class Game {
             String input = scanner.nextLine().trim();
             if (input.equalsIgnoreCase("exit")) {
                 System.out.println("↩️  Terug naar hoofdmenu...");
-                // ensure we persist whichever HP the player currently has
                 SaveManager.save(player);
                 return;
             }
@@ -75,16 +78,32 @@ public class Game {
                 System.out.printf("Voortgang: kamer %d | Score: %d | HP: %d%n",
                         player.currentRoom, player.score, player.hp);
                 SaveManager.save(player);
-
             } else {
-                // monster attacks using your AttackStrategy
+                player.hp--;
+                System.out.println("❌ Fout! -1 HP!");
+
+                // Monster attacks
                 monster.hinder(player);
-                // immediately persist the new HP
+
+                // Give hint
+                String vraag = switch (roomId) {
+                    case 1 -> vraag1;
+                    case 2 -> vraag2;
+                    case 3 -> vraag3;
+                    default -> null;
+                };
+                HintSystem.maybeGiveHint(scanner, vraag);
+
                 SaveManager.save(player);
+
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
 
                 if (player.hp <= 0) {
                     System.out.println("\n💀 Je hebt geen HP meer. Game over!");
-                    // and save the 0-HP state
                     SaveManager.save(player);
                     return;
                 }
