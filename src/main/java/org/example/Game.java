@@ -79,10 +79,6 @@ public class Game {
                         player.currentRoom, player.score, player.hp);
                 SaveManager.save(player);
             } else {
-                player.hp--;
-                System.out.println("❌ Fout! -1 HP!");
-
-                // Monster attacks
                 monster.hinder(player);
 
                 // Give hint
