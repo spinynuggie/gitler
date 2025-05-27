@@ -18,21 +18,13 @@ public class GeminiService {
             Pattern.compile("\"text\"\\s*:\\s*\"(.*?)\"", Pattern.DOTALL);
 
     private static boolean debug = false;
-
-    /** Turn on/off debug logging. */
     public static void setDebug(boolean mode) {
         debug = mode;
     }
-
-    /** Returns whether debug is currently on */
     public static boolean isDebug() {
         return debug;
     }
 
-    /**
-     * Send vraag+antwoord to Gemini and return either
-     * "GOED: <one-sentence>" of "FOUT: <one-sentence>"
-     */
     public static String evaluate(String vraag, String antwoord) {
         try {
             String prompt =
