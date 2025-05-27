@@ -4,6 +4,7 @@ import java.util.*;
 
 public class Game {
     public static void start(Scanner scanner, Player player) {
+        // --- existing setup ---
         EvaluationStrategy gemini = new GeminiEvaluationStrategy();
         String vraag1 = "Wat is de rol van de PO?";
         String vraag2 = "Wat bespreek je tijdens een Daily Scrum?";
@@ -16,25 +17,17 @@ public class Game {
                 new AttackStrategy()
         );
 
-        List<Room> rooms = List.of(
-                Room.of(1, "Sprint Planning", vraag1, gemini),
-                Room.of(2, "Daily Scrum", vraag2, gemini),
-                Room.of(3, "Sprint Review", vraag3, gemini)
-        );
+        // --- map+room setup (uses your updated Room signature internally) ---
+        GameMap gameMap = new GameMap();
 
-        Map<Integer, Room> roomMap = new HashMap<>();
-        for (Room r : rooms) roomMap.put(r.id, r);
-
+        // --- main game loop ---
         while (true) {
             System.out.println("\n🎯 Kies een kamer (of typ 'exit'):");
-            for (Room r : rooms) {
-                boolean done = player.completedRooms.contains(r.id);
-                String mark = done ? "✓" : " ";
-                System.out.printf("  %d. [%s] %s%n", r.id, mark, r.name);
-            }
-            System.out.printf("%n📍 HP: %d | Score: %d%n", player.hp, player.score);
-            System.out.print("Keuze: ");
+            gameMap.viewMap(player);                                  // show the map
+            System.out.printf("%n📍 HP: %d | Score: %d%n",             // stats
+                    player.hp, player.score);
 
+            System.out.print("Keuze: ");
             String input = scanner.nextLine().trim();
             if (input.equalsIgnoreCase("exit")) {
                 System.out.println("↩️  Terug naar hoofdmenu...");
@@ -50,54 +43,58 @@ public class Game {
                 continue;
             }
 
-            int highestDone = player.completedRooms.isEmpty()
-                    ? 0
-                    : Collections.max(player.completedRooms);
-            int maxAllowed = highestDone + 1;
-            if (roomId > maxAllowed) {
-                System.out.println("🔒 Kamer " + roomId
-                        + " is vergrendeld. Voltooi eerst kamer " + highestDone + ".");
+            // lookup only in GameMap’s room list
+            Room selectedRoom = null;
+            for (Room r : gameMap.kamers) {
+                if (r.id == roomId) {
+                    selectedRoom = r;
+                    break;
+                }
+            }
+            if (selectedRoom == null) {
+                System.out.println("⚠️ Kamer " + roomId + " niet toegankelijk. Probeer opnieuw.");
                 continue;
             }
 
-            if (player.completedRooms.contains(roomId)) {
-                System.out.print("⚠️ Kamer " + roomId
-                        + " al voltooid. Opnieuw? (y/n): ");
-                if (!scanner.nextLine().trim().equalsIgnoreCase("y")) {
-                    System.out.println("→ Terug naar kamer-keuze.");
-                    continue;
-                }
-            }
+            // play the room’s challenge
+            boolean correct = selectedRoom.play(scanner);
 
-            boolean correct = roomMap.get(roomId).play(scanner);
             if (correct) {
+                // success handling
                 player.currentRoom = roomId;
-                player.score       += 10;
-                player.completedRooms.add(roomId);
+                player.score += 10;
+                if (!player.completedRooms.contains(roomId)) {
+                    player.completedRooms.add(roomId);
+                }
                 System.out.println("✅ Goed! +10 score");
                 System.out.printf("Voortgang: kamer %d | Score: %d | HP: %d%n",
                         player.currentRoom, player.score, player.hp);
                 SaveManager.save(player);
+
             } else {
+                // failure handling
                 monster.hinder(player);
 
-                // Give hint
+                // contextual hint based on room id
                 String vraag = switch (roomId) {
                     case 1 -> vraag1;
                     case 2 -> vraag2;
                     case 3 -> vraag3;
                     default -> null;
                 };
-                HintSystem.maybeGiveHint(scanner, vraag);
-
+                if (vraag != null) {
+                    HintSystem.maybeGiveHint(scanner, vraag);
+                }
                 SaveManager.save(player);
 
+                // brief pause before next turn
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
 
+                // game-over check
                 if (player.hp <= 0) {
                     System.out.println("\n💀 Je hebt geen HP meer. Game over!");
                     SaveManager.save(player);
