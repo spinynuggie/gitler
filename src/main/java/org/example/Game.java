@@ -4,11 +4,6 @@ import java.util.*;
 
 public class Game {
     public static void start(Scanner scanner, Player player) {
-        // --- existing setup ---
-        EvaluationStrategy gemini = new GeminiEvaluationStrategy();
-        String vraag1 = "Wat is de rol van de PO?";
-        String vraag2 = "Wat bespreek je tijdens een Daily Scrum?";
-        String vraag3 = "Wat toon je tijdens de Sprint Review?";
 
         Monster monster = new Monster(
                 "Goblin",           // name
@@ -76,18 +71,15 @@ public class Game {
                 monster.hinder(player);
 
                 // contextual hint based on room id
-                String vraag = switch (roomId) {
-                    case 1 -> vraag1;
-                    case 2 -> vraag2;
-                    case 3 -> vraag3;
-                    default -> null;
-                };
+                Room currentRoom = gameMap.getRoomById(roomId);
+                String vraag = (currentRoom != null)
+                        ? currentRoom.getVraag()
+                        : "Geen vraag gevonden.";
                 if (vraag != null) {
                     HintSystem.maybeGiveHint(scanner, vraag);
                 }
                 SaveManager.save(player);
 
-                // brief pause before next turn
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {

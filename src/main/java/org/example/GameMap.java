@@ -6,16 +6,6 @@ public class GameMap {
     List<Room> kamers = new ArrayList<>();
     int randomGetalvijftotnegen;
     EvaluationStrategy gemini = new GeminiEvaluationStrategy();
-    String[] vraag= {
-            "Wat is de rol van de PO?",
-            "Wat bespreek je tijdens een Daily Scrum?",
-            "Wat toon je tijdens de Sprint Review?"
-    };
-    String[] naam = {
-            "Sprint Planning",
-            "Daily Scrum",
-            "Sprint Review"
-    };
 
     public GameMap() {
         randomGetalvijftotnegen = (random.nextInt(5) + 5);
@@ -107,31 +97,13 @@ public class GameMap {
             // Sla deze WASD-lijst op bij de kamer
             String bericht = kamerId+String.join("", WASD);
             kamerOpening.add(bericht);
-            System.out.println(bericht);
-        }
 
-        for (int kamerId : ids) {
-            System.out.print("Kamer " + kamerId + " buren: ");
-            if (ids.contains(kamerId - 3)){
-                System.out.print("boven(" + (kamerId - 3) + ") ");
-            }
-            if (ids.contains(kamerId + 3)){
-                System.out.print("onder(" + (kamerId + 3) + ") ");
-            }
-            if (kamerId % 3 != 1 && ids.contains(kamerId - 1)) {
-                System.out.print("links(" + (kamerId - 1) + ") ");
-            }
-            if (kamerId % 3 != 0 && ids.contains(kamerId + 1)){
-                System.out.print("rechts(" + (kamerId + 1) + ") ");
-            }
-            System.out.println();
         }
-
 
         for (int i = 0; i < randomGetalvijftotnegen; i++) {
-            int randomkamer = random.nextInt(vraag.length);
-            String randomvraag = vraag[randomkamer];
-            String randomnaam = naam[randomkamer];
+            Question q = Questions.get(random.nextInt(Questions.size()));
+            String randomvraag = q.getText();
+            String randomnaam  = q.getName();
 
             if(kamerOpening.get(i).contains("x")){
                 kamers.add(Room.of(ids.get(i), randomnaam , randomvraag , gemini, kamerOpening.get(i), true));
@@ -281,5 +253,11 @@ public class GameMap {
             }
             System.out.println();
         }
+    }
+    public Room getRoomById(int id) {
+        for (Room kamer : kamers) {
+            if (kamer.id == id) return kamer;
+        }
+        return null;
     }
 }
