@@ -16,4 +16,4 @@ public class Main {
             Game.start(scanner, player);
         }
     }
-}+
+}
