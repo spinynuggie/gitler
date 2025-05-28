@@ -42,7 +42,7 @@ public class GameMap {
         }
     }
 
-    // Buurmannen aanmaken recoded, omdat het gewoon brute-forcte totdat het een goede combinatie vond. kan lang duren met veel processing als je ongeluk hebt
+    // Buurmannen aanmaken recoded, omdat het gewoon brute-force was totdat het een goede combinatie vond. Kan lang duren met veel processing als je ongeluk hebt
     private List<Integer> generateConnectedRoomIds(int count) {
         List<Integer> all = IntStream.rangeClosed(1, 9).boxed().toList();
         int seed = all.get(RANDOM.nextInt(all.size()));
