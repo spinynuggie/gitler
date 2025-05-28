@@ -8,14 +8,12 @@ public class Game {
         Monster monster = new Monster(
                 "Goblin",           // name
                 3,                  // strength
-                10,                 // monster health
+                10,                 // health
                 new AttackStrategy()
         );
 
-        // --- map+room setup (uses your updated Room signature internally) ---
         GameMap gameMap = new GameMap();
 
-        // --- main game loop ---
         while (true) {
             System.out.println("\n🎯 Kies een kamer (of typ 'exit'):");
             gameMap.viewMap(player);                                  // show the map
@@ -39,17 +37,17 @@ public class Game {
             }
 
             // lookup only in GameMap’s room list
-            Room selectedRoom = null;
-            for (Room r : gameMap.kamers) {
-                if (r.id == roomId) {
-                    selectedRoom = r;
-                    break;
-                }
-            }
+            Room selectedRoom = gameMap.getRoomById(roomId);
             if (selectedRoom == null) {
-                System.out.println("⚠️ Kamer " + roomId + " niet toegankelijk. Probeer opnieuw.");
+                System.out.println("⚠️ Kamer " + roomId + " bestaat niet. Probeer opnieuw.");
                 continue;
             }
+            // movement check
+            if (!gameMap.kanBewegen(player.currentRoom, roomId)) {
+                System.out.println("❌ Je kunt niet naar kamer " + roomId + " lopen — niet aangrenzend!");
+                continue;
+            }
+
 
             // play the room’s challenge
             boolean correct = selectedRoom.play(scanner);
@@ -58,9 +56,7 @@ public class Game {
                 // success handling
                 player.currentRoom = roomId;
                 player.score += 10;
-                if (!player.completedRooms.contains(roomId)) {
-                    player.completedRooms.add(roomId);
-                }
+                player.completedRooms.add(roomId);
                 System.out.println("✅ Goed! +10 score");
                 System.out.printf("Voortgang: kamer %d | Score: %d | HP: %d%n",
                         player.currentRoom, player.score, player.hp);
@@ -81,6 +77,7 @@ public class Game {
                 SaveManager.save(player);
 
                 try {
+                    //noinspection BusyWait
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();

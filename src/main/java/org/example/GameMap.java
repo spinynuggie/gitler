@@ -1,263 +1,187 @@
 package org.example;
+
 import java.util.*;
+import java.util.stream.*;
 
 public class GameMap {
-    Random random = new Random();
-    List<Room> kamers = new ArrayList<>();
-    int randomGetalvijftotnegen;
-    EvaluationStrategy gemini = new GeminiEvaluationStrategy();
+    private static final Random RANDOM = new Random();
+    private static final Map<Integer, List<Integer>> BUREN = new HashMap<>();
+    static {
+        // "buren" (easier math and no repeats)
+        for (int i = 1; i <= 9; i++) {
+            List<Integer> buur = new ArrayList<>();
+            if (i % 3 != 1) buur.add(i - 1);
+            if (i % 3 != 0) buur.add(i + 1);
+            if (i > 3)       buur.add(i - 3);
+            if (i <= 6)      buur.add(i + 3);
+            BUREN.put(i, buur);
+        }
+    }
+
+
+    final int roomCount;
+    final List<Room> rooms;
+    private final Map<Integer, Room> roomsById;
 
     public GameMap() {
-        randomGetalvijftotnegen = (random.nextInt(5) + 5);
-        List<Integer> ids = new ArrayList<>();
-        boolean floatingroom = true;
+        this.roomCount = RANDOM.nextInt(5) + 5;            // between 5 and 9 rooms
+        List<Integer> ids = generateConnectedRoomIds(roomCount);
+        int specialRoomId = pickSpecialRoomId(ids);
 
-        while (floatingroom) {
-            floatingroom = false;
-            ids.clear();
-            for (int i = 1; i <= 9; i++) {
-                ids.add(i);
-            }
+        this.rooms = new ArrayList<>(roomCount);
+        this.roomsById = new HashMap<>();
 
-            Collections.shuffle(ids);
-            ids = new ArrayList<>(ids.subList(0, randomGetalvijftotnegen)); // Maak nieuwe lijst!
+        for (int id : ids) {
+            boolean isSpecial = (id == specialRoomId);
+            String opening = buildOpeningString(id, ids, isSpecial);
+            Question q = Questions.get(RANDOM.nextInt(Questions.size()));
+            EvaluationStrategy gemini = new GeminiEvaluationStrategy();
+            Room room = Room.of(id, q.getName(), q.getText(), gemini, opening, isSpecial);
+            rooms.add(room);
+            roomsById.put(id, room);
+        }
+    }
 
-            // BFS om te checken of alles verbonden is
-            Set<Integer> bezocht = new HashSet<>();
-            Queue<Integer> queue = new LinkedList<>();
-            queue.add(ids.get(0));
-            bezocht.add(ids.get(0));
+    // Buurmannen aanmaken recoded, omdat het gewoon brute-forcte totdat het een goede combinatie vond. kan lang duren met veel processing als je ongeluk hebt
+    private List<Integer> generateConnectedRoomIds(int count) {
+        List<Integer> all = IntStream.rangeClosed(1, 9).boxed().toList();
+        int seed = all.get(RANDOM.nextInt(all.size()));
+        Set<Integer> connected = new LinkedHashSet<>();
+        connected.add(seed);
 
-            int[] offsets = {1, -1, 3, -3};
-            while (!queue.isEmpty()) {
-                int current = queue.poll();
-                for (int offset : offsets) {
-                    int buur = current + offset;
-                    if (ids.contains(buur) && !bezocht.contains(buur) && zijnBuren(current, buur)) {
-                        bezocht.add(buur);
-                        queue.add(buur);
+        List<Integer> frontier = new ArrayList<>(BUREN.get(seed));
+        while (connected.size() < count) {
+            if (frontier.isEmpty()) {
+                // zorgt ervoor bij de RARE BUG DAT 'frontiers' (buren met wie er 'connected' bestaan) leeg is, dat het toch de grid opnieuw checkt
+                for (int id : new ArrayList<>(connected)) {
+                    for (int n : BUREN.get(id)) {
+                        if (!connected.contains(n)) frontier.add(n);
                     }
                 }
             }
-
-            if (bezocht.size() != ids.size()) {
-                floatingroom = true; // Niet alles is verbonden, probeer opnieuw
-            }
-        }
-
-        List<String> kamerOpening = new ArrayList<>();
-        int randomKamerId = 0;
-        if(ids.contains(5)){
-            ids.remove(Integer.valueOf(5)); // Verwijder kamer 5 als deze bestaat
-            int randomIndex = random.nextInt(ids.size());
-            randomKamerId = ids.get(randomIndex);
-            ids.add(5);
-        }else{
-            int randomIndex = random.nextInt(ids.size());
-            randomKamerId = ids.get(randomIndex);
-        }
-
-        for (int kamerId : ids) {
-            List<String> WASD = new ArrayList<>();
-            if(kamerId == randomKamerId) {
-                // Random kamer is 5, dus deze heeft geen buren
-                WASD.add("x");
-                if (kamerId >= 1 && kamerId <= 3) {
-                    WASD.add("W");
-                }
-                // Onderste rij krijgt "S"
-                if (kamerId >= 7 && kamerId <= 9) {
-                    WASD.add("S");
-                }
-                // Linkerkolom krijgt "A"
-                if (kamerId == 1 || kamerId == 4 || kamerId == 7) {
-                    WASD.add("A");
-                }
-                // Rechterkolom krijgt "D"
-                if (kamerId == 3 || kamerId == 6 || kamerId == 9) {
-                    WASD.add("D");
+            int next = frontier.remove(RANDOM.nextInt(frontier.size()));
+            if (connected.add(next)) {
+                for (int n : BUREN.get(next)) {
+                    if (!connected.contains(n) && !frontier.contains(n)) {
+                        frontier.add(n);
+                    }
                 }
             }
-            // Boven (W)
-            if (ids.contains(kamerId - 3)) {
-                WASD.add("W");
-            }
-            // Onder (S)
-            if (ids.contains(kamerId + 3)) {
-                WASD.add("S");
-            }
-            // Links (A)
-            if (kamerId % 3 != 1 && ids.contains(kamerId - 1)) {
-                WASD.add("A");
-            }
-            // Rechts (D)
-            if (kamerId % 3 != 0 && ids.contains(kamerId + 1)) {
-                WASD.add("D");
-            }
-            // Sla deze WASD-lijst op bij de kamer
-            String bericht = kamerId+String.join("", WASD);
-            kamerOpening.add(bericht);
-
         }
-
-        for (int i = 0; i < randomGetalvijftotnegen; i++) {
-            Question q = Questions.get(random.nextInt(Questions.size()));
-            String randomvraag = q.getText();
-            String randomnaam  = q.getName();
-
-            if(kamerOpening.get(i).contains("x")){
-                kamers.add(Room.of(ids.get(i), randomnaam , randomvraag , gemini, kamerOpening.get(i), true));
-            }else{
-                kamers.add(Room.of(ids.get(i), randomnaam , randomvraag , gemini, kamerOpening.get(i), false));
-            }
-        }
+        return new ArrayList<>(connected);
     }
 
-    boolean zijnBuren(int a, int b) {
-        if (Math.abs(a - b) == 1) {
-            // Horizontale buren, check dat ze op dezelfde rij zitten
-            return (a - 1) / 3 == (b - 1) / 3;
-        } else if (Math.abs(a - b) == 3) {
-            // Verticale buren
-            return true;
-        }
-        return false;
+    private int pickSpecialRoomId(List<Integer> ids) {
+        return ids.get(RANDOM.nextInt(ids.size()));
+    }
+
+    // optimized WASD om in ÉÉN methode te werken, en x is niet meer hardcoded.
+    private String buildOpeningString(int id, List<Integer> ids, boolean isSpecial) {
+        StringBuilder sb = new StringBuilder();
+        if (isSpecial) sb.append("x");
+        if (ids.contains(id - 3)) sb.append("W");
+        if (ids.contains(id + 3)) sb.append("S");
+        if (id % 3 != 1 && ids.contains(id - 1)) sb.append("A");
+        if (id % 3 != 0 && ids.contains(id + 1)) sb.append("D");
+        return sb.toString();
+    }
+
+    public Room getRoomById(int id) {
+        return roomsById.get(id);
     }
 
 
+    // buffers map for quicker loading times (useless but good for optimization)
     public void viewMap(Player player) {
         System.out.println("🗺️  Map");
-        for (int rij = 0; rij < 3; rij++) {
-            // Eerste regel van de blokken
-            for (int kol = 1; kol <= 3; kol++) {
-                int id = rij * 3 + kol;
-                Room gevonden = null;
-                for (Room kamer : kamers) {
-                    if (kamer.id == id) {
-                        gevonden = kamer;
-                        break;
-                    }
-                }
-                if (gevonden != null) {
-                    String open = gevonden.opening;
-                    if(open.contains("W")){
+        for (int row = 0; row < 3; row++) {
+            StringBuilder[] lines = new StringBuilder[5];
+            for (int i = 0; i < lines.length; i++) lines[i] = new StringBuilder();
 
-                        System.out.printf("+----  ----+ ");
-                    }else{
-                        System.out.printf("+----------+ ");
-                    }
-
+            for (int col = 1; col <= 3; col++) {
+                int id = row * 3 + col;
+                Room r = roomsById.get(id);
+                if (r != null) {
+                    String o = r.opening;
+                    lines[0].append(o.contains("W")
+                            ? "+----  ----+ " : "+----------+ ");
                 } else {
-                    System.out.print("             ");
-                }
-
-            }
-            System.out.println();
-
-            // Tweede regel (naam of X)
-            for (int kol = 1; kol <= 3; kol++) {
-                int id = rij * 3 + kol;
-                Room gevonden = null;
-                for (Room kamer : kamers) {
-                    if (kamer.id == id) {
-                        gevonden = kamer;
-                        break;
-                    }
-                }
-                if (gevonden != null) {
-
-                    System.out.printf("| %-9s| ", gevonden.name.length() > 9 ? gevonden.name.substring(0,9) : gevonden.name);
-
-                } else {
-                    System.out.print("             ");
+                    lines[0].append("             ");
                 }
             }
-            System.out.println();
+            lines[0].append("\n");
 
-            // Derde regel (kamer nummer of leeg)
-            for (int kol = 1; kol <= 3; kol++) {
-                int id = rij * 3 + kol;
-                Room gevonden = null;
-                for (Room kamer : kamers) {
-                    if (kamer.id == id) {
-                        gevonden = kamer;
-                        break;
-                    }
+            for (int col = 1; col <= 3; col++) {
+                Room r = roomsById.get(row * 3 + col);
+                if (r != null) {
+                    String n = r.name;
+                    lines[1].append(String.format(
+                            "| %-9s| ",
+                            n.length() > 9 ? n.substring(0,9) : n
+                    ));
+                } else {
+                    lines[1].append("             ");
                 }
-                if (gevonden != null) {
-                    String open = gevonden.opening;
-                    if (open.contains("D") && open.contains("A")) {
-                        System.out.printf("  kamer %-3d  ", gevonden.id);
-                    } else if (open.contains("D")) {
-                        System.out.printf("| kamer %-3d  ", gevonden.id);
-                    } else if (open.contains("A")) {
-                        System.out.printf("  kamer %-3d| ", gevonden.id);
+            }
+            lines[1].append("\n");
+
+            for (int col = 1; col <= 3; col++) {
+                int id = row * 3 + col;
+                Room r = roomsById.get(id);
+                if (r != null) {
+                    boolean a = r.opening.contains("A"),
+                            d = r.opening.contains("D");
+                    if (a && d) {
+                        lines[2].append(String.format("  kamer %-3d  ", id));
+                    } else if (d) {
+                        lines[2].append(String.format("| kamer %-3d  ", id));
+                    } else if (a) {
+                        lines[2].append(String.format("  kamer %-3d| ", id));
                     } else {
-                        System.out.printf("| kamer %-3d| ", gevonden.id);
+                        lines[2].append(String.format("| kamer %-3d| ", id));
                     }
                 } else {
-                    System.out.print("     X       ");
+                    lines[2].append("     X       ");
                 }
             }
-            System.out.println();
+            lines[2].append("\n");
 
-            // Vierde kammer (of player hier is of niet)
-            for (int kol = 1; kol <= 3; kol++) {
-                int id = rij * 3 + kol;
-                boolean gevonden = false;
-                boolean playerInRoom = false;
-                for (Room kamer : kamers) {
-                    if (kamer.id == id) {
-                        gevonden = true;
-                        break;
-                    }
-                }
-
+            for (int col = 1; col <= 3; col++) {
+                int id = row * 3 + col;
                 if (player.currentRoom == id) {
-                    playerInRoom = true;
-
-                }
-
-                if (!gevonden) {
-                    System.out.print("             ");
-                } else if (playerInRoom) {
-                    System.out.printf("|    you   | ");
+                    lines[3].append("|    you   | ");
+                } else if (roomsById.containsKey(id)) {
+                    lines[3].append("|          | ");
                 } else {
-                    System.out.print("|          | ");
+                    lines[3].append("             ");
                 }
             }
-            System.out.println();
+            lines[3].append("\n");
 
-            for (int kol = 1; kol <= 3; kol++) {
-                int id = rij * 3 + kol;
-                Room gevonden = null;
-                for (Room kamer : kamers) {
-                    if (kamer.id == id) {
-                        gevonden = kamer;
-                        break;
-                    }
-                }
-                if (gevonden != null) {
-                    String open = gevonden.opening;
-                    if(open.contains("S")){
-
-                        System.out.printf("+----  ----+ ");
-                    }else{
-                        System.out.printf("+----------+ ");
-                    }
-
+            for (int col = 1; col <= 3; col++) {
+                Room r = roomsById.get(row * 3 + col);
+                if (r != null) {
+                    lines[4].append(r.opening.contains("S")
+                            ? "+----  ----+ " : "+----------+ ");
                 } else {
-                    System.out.print("             ");
+                    lines[4].append("             ");
                 }
-
             }
-            System.out.println();
+            lines[4].append("\n");
+
+            // print the buffered stuff
+            for (StringBuilder line : lines) {
+                System.out.print(line);
+            }
         }
     }
-    public Room getRoomById(int id) {
-        for (Room kamer : kamers) {
-            if (kamer.id == id) return kamer;
+    public boolean kanBewegen(int fromId, int toId) {
+        // 1) check buren
+        List<Integer> opties = BUREN.getOrDefault(fromId, Collections.emptyList());
+        if (!opties.contains(toId)) {
+            return false;
         }
-        return null;
+        // 2) check of kamer bestaat
+        return roomsById.containsKey(toId);
     }
 }
