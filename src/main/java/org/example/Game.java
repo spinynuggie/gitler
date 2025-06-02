@@ -48,25 +48,8 @@ public class Game {
                 continue;
             }
 
-            // ─── Joker + normale vraagblok ───────────────────────────────────────────
-            System.out.println("\n— " + selectedRoom.getVraag() + " —");
-            System.out.print("Typ je antwoord (of 'joker' om je Jokerkaart in te zetten): ");
-            String antwoord = scanner.nextLine().trim();
-
-            boolean correct;
-            if (antwoord.equalsIgnoreCase("joker")) {
-                if (!player.jokerAvailable) {
-                    System.out.println("❌ Je hebt je Joker al gebruikt!");
-                    // “continue” jumps straight back to the top of the while-loop
-                    continue;
-                }
-                player.jokerAvailable = false;
-                correct = true;
-                System.out.println("🃏 Joker gebruikt! Vraag automatisch goed gerekend.");
-            } else {
-                // This calls selectedRoom.play(scanner), which will re-display the question
-                correct = selectedRoom.play(scanner);
-            }
+            // ─── Vervang de oude joker‐prompt door één regel waarin we de 'play' methode met joker‐logica aanroepen ───
+            boolean correct = selectedRoom.play(scanner, player);
             // ─────────────────────────────────────────────────────────────────────────
 
             if (correct) {
