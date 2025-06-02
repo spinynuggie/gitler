@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class GeminiService {
-    private static final String API_KEY = "AIzaSyCGVQlWdYFBK7iheb4AS1tsnae-wrFmjv0";
+    private static final String API_KEY = "AIzaSyARU3po0R4HUU9isaS_EWr6DPCLTl0KSA4";
     private static final String ENDPOINT =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="
                     + API_KEY;

@@ -25,7 +25,6 @@ public abstract class Room {
 
         // Toon de vraag
         System.out.println("\n— " + vraag + " —");
-        System.out.print("Typ je antwoord (of 'joker' om je joker te gebruiken): ");
         String antwoord = scanner.nextLine().trim();
 
         // Joker‐check tijdens het beantwoorden

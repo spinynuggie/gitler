@@ -4,96 +4,83 @@ import java.util.*;
 import java.util.stream.*;
 
 public class GameMap {
-    private final Random rnd;
-    private final long seed; // added seeding
-
-    private static final Map<Integer, List<Integer>> BUREN = new HashMap<>();
+    private static final Map<Integer, List<Integer>> BUREN;
     static {
+        Map<Integer, List<Integer>> tmp = new HashMap<>();
         for (int i = 1; i <= 9; i++) {
-            List<Integer> buur = new ArrayList<>();
+            List<Integer> buur = new ArrayList<>(4);
             if (i % 3 != 1) buur.add(i - 1);
             if (i % 3 != 0) buur.add(i + 1);
             if (i > 3)       buur.add(i - 3);
             if (i <= 6)      buur.add(i + 3);
-            BUREN.put(i, buur);
+            tmp.put(i, Collections.unmodifiableList(buur));
         }
+        BUREN = Collections.unmodifiableMap(tmp);
     }
 
+    private final Random rnd;
+    private final long seed;
+    private final int swordRoomId;
     final int roomCount;
     final List<Room> rooms;
     private final Map<Integer, Room> roomsById;
 
-    // 🟢 DEFAULT CONSTRUCTOR — picks new seed
     public GameMap() {
         this(new Random().nextLong());
     }
 
-    // 🟢 SEEDED CONSTRUCTOR
     public GameMap(long seed) {
         this.seed = seed;
         this.rnd = new Random(seed);
-
-        this.roomCount = rnd.nextInt(5) + 5;
+        this.roomCount = rnd.nextInt(4) + 5;
         List<Integer> ids = generateConnectedRoomIds(roomCount);
-        int specialRoomId = pickSpecialRoomId(ids);
-
+        this.swordRoomId = ids.get(rnd.nextInt(ids.size()));
         this.rooms = new ArrayList<>(roomCount);
-        this.roomsById = new HashMap<>();
-
+        this.roomsById = new HashMap<>(roomCount);
+        Set<Integer> idSet = new HashSet<>(ids);
         for (int id : ids) {
-            boolean isSpecial = (id == specialRoomId);
-            String opening = buildOpeningString(id, ids, isSpecial);
-            Question q = Questions.get(rnd.nextInt(Questions.size())); // 🟡 use rnd
-            EvaluationStrategy gemini = new GeminiEvaluationStrategy();
-            Room room = Room.of(id, q.getName(), q.getText(), gemini, opening, isSpecial);
+            String opening = buildOpeningString(id, idSet);
+            Question q = Questions.get(rnd.nextInt(Questions.size()));
+            Room room = Room.of(id, q.getName(), q.getText(), new GeminiEvaluationStrategy(), opening);
             rooms.add(room);
             roomsById.put(id, room);
         }
     }
 
-    // 🟢 Getter for Player to store
     public long getSeed() {
         return seed;
     }
 
+    public int getSwordRoomId() {
+        return swordRoomId;
+    }
+
     private List<Integer> generateConnectedRoomIds(int count) {
         List<Integer> all = IntStream.rangeClosed(1, 9).boxed().toList();
-        int seed = all.get(rnd.nextInt(all.size())); // 🟡 use rnd
+        int start = all.get(rnd.nextInt(all.size()));
         Set<Integer> connected = new LinkedHashSet<>();
-        connected.add(seed);
-
-        List<Integer> frontier = new ArrayList<>(BUREN.get(seed));
+        connected.add(start);
+        LinkedList<Integer> frontier = new LinkedList<>(BUREN.get(start));
         while (connected.size() < count) {
             if (frontier.isEmpty()) {
-                for (int id : new ArrayList<>(connected)) {
-                    for (int n : BUREN.get(id)) {
+                for (int id : new ArrayList<>(connected))
+                    for (int n : BUREN.get(id))
                         if (!connected.contains(n)) frontier.add(n);
-                    }
-                }
             }
-            int next = frontier.remove(rnd.nextInt(frontier.size())); // 🟡 use rnd
-            if (connected.add(next)) {
-                for (int n : BUREN.get(next)) {
-                    if (!connected.contains(n) && !frontier.contains(n)) {
-                        frontier.add(n);
-                    }
-                }
-            }
+            int next = frontier.remove(rnd.nextInt(frontier.size()));
+            if (connected.add(next))
+                for (int n : BUREN.get(next))
+                    if (!connected.contains(n) && !frontier.contains(n)) frontier.add(n);
         }
         return new ArrayList<>(connected);
     }
 
-    private int pickSpecialRoomId(List<Integer> ids) {
-        return ids.get(rnd.nextInt(ids.size())); // 🟡 use rnd
-    }
-
-    private String buildOpeningString(int id, List<Integer> ids, boolean isSpecial) {
-        StringBuilder sb = new StringBuilder();
-        if (isSpecial) sb.append("x");
-        if (ids.contains(id - 3)) sb.append("W");
-        if (ids.contains(id + 3)) sb.append("S");
-        if (id % 3 != 1 && ids.contains(id - 1)) sb.append("A");
-        if (id % 3 != 0 && ids.contains(id + 1)) sb.append("D");
+    private String buildOpeningString(int id, Set<Integer> idSet) {
+        StringBuilder sb = new StringBuilder(4);
+        if (idSet.contains(id - 3)) sb.append('N');
+        if (idSet.contains(id + 3)) sb.append('Z');
+        if (id % 3 != 1 && idSet.contains(id - 1)) sb.append('W');
+        if (id % 3 != 0 && idSet.contains(id + 1)) sb.append('O');
         return sb.toString();
     }
 
@@ -102,92 +89,76 @@ public class GameMap {
     }
 
     public void viewMap(Player player) {
-        // no changes needed here
         System.out.println("🗺️  Map");
         for (int row = 0; row < 3; row++) {
             StringBuilder[] lines = new StringBuilder[5];
-            for (int i = 0; i < lines.length; i++) lines[i] = new StringBuilder();
-
+            for (int i = 0; i < 5; i++) {
+                lines[i] = new StringBuilder();
+            }
             for (int col = 1; col <= 3; col++) {
                 int id = row * 3 + col;
                 Room r = roomsById.get(id);
-                if (r != null) {
-                    String o = r.opening;
-                    lines[0].append(o.contains("W")
-                            ? "+----  ----+ " : "+----------+ ");
-                } else {
-                    lines[0].append("             ");
-                }
+                String opening = (r != null ? r.opening : "");
+                if (r != null && opening.contains("N")) lines[0].append("+----  ----+ ");
+                else if (r != null)                  lines[0].append("+----------+ ");
+                else                                 lines[0].append("             ");
             }
-            lines[0].append("\n");
+            lines[0].append('\n');
 
             for (int col = 1; col <= 3; col++) {
                 Room r = roomsById.get(row * 3 + col);
                 if (r != null) {
-                    String n = r.name;
-                    lines[1].append(String.format(
-                            "| %-9s| ",
-                            n.length() > 9 ? n.substring(0, 9) : n
-                    ));
+                    String name = r.name.length() > 9 ? r.name.substring(0, 9) : r.name;
+                    lines[1].append(String.format("| %-9s| ", name));
                 } else {
                     lines[1].append("             ");
                 }
             }
-            lines[1].append("\n");
+            lines[1].append('\n');
 
             for (int col = 1; col <= 3; col++) {
                 int id = row * 3 + col;
                 Room r = roomsById.get(id);
                 if (r != null) {
-                    boolean a = r.opening.contains("A"),
-                            d = r.opening.contains("D");
-                    if (a && d) {
-                        lines[2].append(String.format("  kamer %-3d  ", id));
-                    } else if (d) {
-                        lines[2].append(String.format("| kamer %-3d  ", id));
-                    } else if (a) {
-                        lines[2].append(String.format("  kamer %-3d| ", id));
-                    } else {
-                        lines[2].append(String.format("| kamer %-3d| ", id));
-                    }
+                    String opening = r.opening;
+                    boolean west  = opening.contains("W");
+                    boolean oost = opening.contains("O");
+                    if (west && oost)      lines[2].append(String.format("  kamer %-3d  ", id));
+                    else if (oost)         lines[2].append(String.format("| kamer %-3d  ", id));
+                    else if (west)         lines[2].append(String.format("  kamer %-3d| ", id));
+                    else                   lines[2].append(String.format("| kamer %-3d| ", id));
                 } else {
                     lines[2].append("     X       ");
                 }
             }
-            lines[2].append("\n");
+            lines[2].append('\n');
 
             for (int col = 1; col <= 3; col++) {
                 int id = row * 3 + col;
-                if (player.currentRoom == id) {
-                    lines[3].append("|    you   | ");
-                } else if (roomsById.containsKey(id)) {
-                    lines[3].append("|          | ");
-                } else {
-                    lines[3].append("             ");
-                }
+                if (player.currentRoom == id)         lines[3].append("|    you   | ");
+                else if (roomsById.containsKey(id))    lines[3].append("|          | ");
+                else                                   lines[3].append("             ");
             }
-            lines[3].append("\n");
+            lines[3].append('\n');
 
             for (int col = 1; col <= 3; col++) {
-                Room r = roomsById.get(row * 3 + col);
-                if (r != null) {
-                    lines[4].append(r.opening.contains("S")
-                            ? "+----  ----+ " : "+----------+ ");
-                } else {
-                    lines[4].append("             ");
-                }
+                int id = row * 3 + col;
+                Room r = roomsById.get(id);
+                String opening = (r != null ? r.opening : "");
+                if (r != null && opening.contains("Z")) lines[4].append("+----  ----+ ");
+                else if (r != null)                    lines[4].append("+----------+ ");
+                else                                   lines[4].append("             ");
             }
-            lines[4].append("\n");
+            lines[4].append('\n');
 
-            for (StringBuilder line : lines) {
-                System.out.print(line);
+            for (StringBuilder sb : lines) {
+                System.out.print(sb);
             }
         }
     }
 
     public boolean kanBewegen(int fromId, int toId) {
-        List<Integer> opties = BUREN.getOrDefault(fromId, Collections.emptyList());
-        if (!opties.contains(toId)) return false;
-        return roomsById.containsKey(toId);
+        return BUREN.getOrDefault(fromId, Collections.emptyList()).contains(toId)
+                && roomsById.containsKey(toId);
     }
 }
