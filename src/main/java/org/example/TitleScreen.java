@@ -4,8 +4,6 @@ import java.util.Scanner;
 
 public class TitleScreen {
     private static final int STARTING_HP = 10;  // match your Main.java default
-
-    // show the main menu and return the (possibly new) Player
     public static Player show(Scanner scanner, Player player) {
         final String BOLD  = "\u001B[1m";
         final String RESET = "\u001B[0m";
