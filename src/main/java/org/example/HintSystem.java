@@ -4,9 +4,9 @@ import java.util.Scanner;
 
 public class HintSystem {
     public static void maybeGiveHint(Scanner scanner, String question) {
-        System.out.print("❔ Wil je een hint? (ja/nee): ");
+        System.out.print("❔ Wil je een hint? (j/n): ");
         String input = scanner.nextLine().trim().toLowerCase();
-        if (input.equals("ja")) {
+        if (input.equals("j")) {
             HintProvider provider = HintFactory.getRandomHintProvider();
             System.out.println(provider.getHint(question));
         } else {
