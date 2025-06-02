@@ -4,10 +4,11 @@ import java.util.*;
 import java.util.stream.*;
 
 public class GameMap {
-    private static final Random RANDOM = new Random();
+    private final Random rnd;
+    private final long seed; // added seeding
+
     private static final Map<Integer, List<Integer>> BUREN = new HashMap<>();
     static {
-        // "buren" (easier math and no repeats)
         for (int i = 1; i <= 9; i++) {
             List<Integer> buur = new ArrayList<>();
             if (i % 3 != 1) buur.add(i - 1);
@@ -18,13 +19,21 @@ public class GameMap {
         }
     }
 
-
     final int roomCount;
     final List<Room> rooms;
     private final Map<Integer, Room> roomsById;
 
+    // 🟢 DEFAULT CONSTRUCTOR — picks new seed
     public GameMap() {
-        this.roomCount = RANDOM.nextInt(5) + 5;            // between 5 and 9 rooms
+        this(new Random().nextLong());
+    }
+
+    // 🟢 SEEDED CONSTRUCTOR
+    public GameMap(long seed) {
+        this.seed = seed;
+        this.rnd = new Random(seed);
+
+        this.roomCount = rnd.nextInt(5) + 5;
         List<Integer> ids = generateConnectedRoomIds(roomCount);
         int specialRoomId = pickSpecialRoomId(ids);
 
@@ -34,7 +43,7 @@ public class GameMap {
         for (int id : ids) {
             boolean isSpecial = (id == specialRoomId);
             String opening = buildOpeningString(id, ids, isSpecial);
-            Question q = Questions.get(RANDOM.nextInt(Questions.size()));
+            Question q = Questions.get(rnd.nextInt(Questions.size())); // 🟡 use rnd
             EvaluationStrategy gemini = new GeminiEvaluationStrategy();
             Room room = Room.of(id, q.getName(), q.getText(), gemini, opening, isSpecial);
             rooms.add(room);
@@ -42,24 +51,27 @@ public class GameMap {
         }
     }
 
-    // Buurmannen aanmaken recoded, omdat het gewoon brute-force was totdat het een goede combinatie vond. Kan lang duren met veel processing als je ongeluk hebt
+    // 🟢 Getter for Player to store
+    public long getSeed() {
+        return seed;
+    }
+
     private List<Integer> generateConnectedRoomIds(int count) {
         List<Integer> all = IntStream.rangeClosed(1, 9).boxed().toList();
-        int seed = all.get(RANDOM.nextInt(all.size()));
+        int seed = all.get(rnd.nextInt(all.size())); // 🟡 use rnd
         Set<Integer> connected = new LinkedHashSet<>();
         connected.add(seed);
 
         List<Integer> frontier = new ArrayList<>(BUREN.get(seed));
         while (connected.size() < count) {
             if (frontier.isEmpty()) {
-                // zorgt ervoor bij de RARE BUG DAT 'frontiers' (buren met wie er 'connected' bestaan) leeg is, dat het toch de grid opnieuw checkt
                 for (int id : new ArrayList<>(connected)) {
                     for (int n : BUREN.get(id)) {
                         if (!connected.contains(n)) frontier.add(n);
                     }
                 }
             }
-            int next = frontier.remove(RANDOM.nextInt(frontier.size()));
+            int next = frontier.remove(rnd.nextInt(frontier.size())); // 🟡 use rnd
             if (connected.add(next)) {
                 for (int n : BUREN.get(next)) {
                     if (!connected.contains(n) && !frontier.contains(n)) {
@@ -72,10 +84,9 @@ public class GameMap {
     }
 
     private int pickSpecialRoomId(List<Integer> ids) {
-        return ids.get(RANDOM.nextInt(ids.size()));
+        return ids.get(rnd.nextInt(ids.size())); // 🟡 use rnd
     }
 
-    // optimized WASD om in ÉÉN methode te werken, en x is niet meer hardcoded.
     private String buildOpeningString(int id, List<Integer> ids, boolean isSpecial) {
         StringBuilder sb = new StringBuilder();
         if (isSpecial) sb.append("x");
@@ -90,9 +101,8 @@ public class GameMap {
         return roomsById.get(id);
     }
 
-
-    // buffers map for quicker loading times (useless but good for optimization)
     public void viewMap(Player player) {
+        // no changes needed here
         System.out.println("🗺️  Map");
         for (int row = 0; row < 3; row++) {
             StringBuilder[] lines = new StringBuilder[5];
@@ -117,7 +127,7 @@ public class GameMap {
                     String n = r.name;
                     lines[1].append(String.format(
                             "| %-9s| ",
-                            n.length() > 9 ? n.substring(0,9) : n
+                            n.length() > 9 ? n.substring(0, 9) : n
                     ));
                 } else {
                     lines[1].append("             ");
@@ -169,19 +179,15 @@ public class GameMap {
             }
             lines[4].append("\n");
 
-            // print the buffered stuff
             for (StringBuilder line : lines) {
                 System.out.print(line);
             }
         }
     }
+
     public boolean kanBewegen(int fromId, int toId) {
-        // 1) check buren
         List<Integer> opties = BUREN.getOrDefault(fromId, Collections.emptyList());
-        if (!opties.contains(toId)) {
-            return false;
-        }
-        // 2) check of kamer bestaat
+        if (!opties.contains(toId)) return false;
         return roomsById.containsKey(toId);
     }
 }

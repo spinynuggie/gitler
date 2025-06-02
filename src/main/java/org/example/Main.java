@@ -10,6 +10,7 @@ public class Main {
         if (player == null) {
             player = new Player(1, 10);
         }
+        player.getMap();
 
         while (true) {
             player = TitleScreen.show(scanner, player);

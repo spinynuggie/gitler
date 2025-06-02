@@ -12,12 +12,12 @@ public class Game {
                 new AttackStrategy()
         );
 
-        GameMap gameMap = new GameMap();
+        GameMap gameMap = player.getMap();
 
         while (true) {
             System.out.println("\n🎯 Kies een kamer (of typ 'exit'):");
-            gameMap.viewMap(player);                                  // show the map
-            System.out.printf("%n📍 HP: %d | Score: %d%n",             // stats
+            gameMap.viewMap(player);
+            System.out.printf("%n📍 HP: %d | Score: %d%n",
                     player.hp, player.score);
 
             System.out.print("Keuze: ");
@@ -36,24 +36,20 @@ public class Game {
                 continue;
             }
 
-            // lookup only in GameMap’s room list
             Room selectedRoom = gameMap.getRoomById(roomId);
             if (selectedRoom == null) {
                 System.out.println("⚠️ Kamer " + roomId + " bestaat niet. Probeer opnieuw.");
                 continue;
             }
-            // movement check
+
             if (!gameMap.kanBewegen(player.currentRoom, roomId)) {
                 System.out.println("❌ Je kunt niet naar kamer " + roomId + " lopen — niet aangrenzend!");
                 continue;
             }
 
-
-            // play the room’s challenge
             boolean correct = selectedRoom.play(scanner);
 
             if (correct) {
-                // success handling
                 player.currentRoom = roomId;
                 player.score += 10;
                 player.completedRooms.add(roomId);
@@ -63,27 +59,20 @@ public class Game {
                 SaveManager.save(player);
 
             } else {
-                // failure handling
                 monster.hinder(player);
 
-                // contextual hint based on room id
-                Room currentRoom = gameMap.getRoomById(roomId);
-                String vraag = (currentRoom != null)
-                        ? currentRoom.getVraag()
-                        : "Geen vraag gevonden.";
+                String vraag = selectedRoom.getVraag();
                 if (vraag != null) {
                     HintSystem.maybeGiveHint(scanner, vraag);
                 }
                 SaveManager.save(player);
 
                 try {
-                    //noinspection BusyWait
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
 
-                // game-over check
                 if (player.hp <= 0) {
                     System.out.println("\n💀 Je hebt geen HP meer. Game over!");
                     SaveManager.save(player);
