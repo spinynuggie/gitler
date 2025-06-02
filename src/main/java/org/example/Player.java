@@ -8,6 +8,7 @@ import java.util.Set;
 public class Player implements Serializable {
 
     @Serial private static final long serialVersionUID = 1L;
+    public boolean jokerAvailable = true;
     public int currentRoom;
     public int score;
     public int hp;

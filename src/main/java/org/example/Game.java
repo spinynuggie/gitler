@@ -47,7 +47,26 @@ public class Game {
                 continue;
             }
 
+
             boolean correct = selectedRoom.play(scanner);
+            System.out.println("\n— " + selectedRoom.getVraag() + " —");
+            System.out.print("Typ je antwoord (of 'joker' om je Jokerkaart in te zetten): ");
+            String antwoord = scanner.nextLine().trim();
+            boolean correct;
+
+            if (antwoord.equalsIgnoreCase("joker")) {
+                if (!player.jokerAvailable) {
+                    System.out.println("❌ Je hebt je Joker al gebruikt!");
+                    continue;
+                }
+
+                player.jokerAvailable = false;
+                correct = true;
+                System.out.println("🃏 Joker gebruikt! Vraag automatisch goed gerekend.");
+            } else {
+                correct = selectedRoom.play(scanner);
+            }
+
 
             if (correct) {
                 player.currentRoom = roomId;
