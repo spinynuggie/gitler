@@ -12,6 +12,7 @@ public class Game {
                 new AttackStrategy()
         );
 
+        // ← Reuse the same seeded map from Player
         GameMap gameMap = player.getMap();
 
         while (true) {
@@ -47,26 +48,26 @@ public class Game {
                 continue;
             }
 
-
-            boolean correct = selectedRoom.play(scanner);
+            // ─── Joker + normale vraagblok ───────────────────────────────────────────
             System.out.println("\n— " + selectedRoom.getVraag() + " —");
             System.out.print("Typ je antwoord (of 'joker' om je Jokerkaart in te zetten): ");
             String antwoord = scanner.nextLine().trim();
-            boolean correct;
 
+            boolean correct;
             if (antwoord.equalsIgnoreCase("joker")) {
                 if (!player.jokerAvailable) {
                     System.out.println("❌ Je hebt je Joker al gebruikt!");
+                    // “continue” jumps straight back to the top of the while-loop
                     continue;
                 }
-
                 player.jokerAvailable = false;
                 correct = true;
                 System.out.println("🃏 Joker gebruikt! Vraag automatisch goed gerekend.");
             } else {
+                // This calls selectedRoom.play(scanner), which will re-display the question
                 correct = selectedRoom.play(scanner);
             }
-
+            // ─────────────────────────────────────────────────────────────────────────
 
             if (correct) {
                 player.currentRoom = roomId;
