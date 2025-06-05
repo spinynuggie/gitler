@@ -8,8 +8,9 @@ public class Main {
 
         Player player = SaveManager.load();
         if (player == null) {
-            player = new Player(1, 3);
+            player = new Player(1, 10);
         }
+        player.getMap();
 
         while (true) {
             player = TitleScreen.show(scanner, player);
