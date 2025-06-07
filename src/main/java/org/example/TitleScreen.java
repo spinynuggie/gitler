@@ -31,6 +31,10 @@ public class TitleScreen {
             System.out.print("Maak een keuze: ");
 
             String keuze = scanner.nextLine().trim();
+            if (keuze.equals("admin42")) {
+                AdminPanel.show(scanner);
+                continue;
+            }
             switch (keuze) {
                 case "1":
                     // start the game with whatever Player we currently have
@@ -47,7 +51,7 @@ public class TitleScreen {
                         // delete old save
                         SaveManager.reset();
                         // re-initialize to starting HP
-                        player = new Player(1, STARTING_HP);
+                        player = new Player(STARTING_HP);
                         // immediately save this fresh state
                         SaveManager.save(player);
                         System.out.println("🗑️  Save gewist en nieuwe speler gestart met "

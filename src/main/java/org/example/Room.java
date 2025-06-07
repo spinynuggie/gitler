@@ -18,43 +18,47 @@ public abstract class Room {
     // 1) Houd alleen deze abstracte definitie over:
     protected abstract String getVraag();
 
-    // 2) Pas hier alleen de play-methode aan; verwijder alle andere getVraag‐overrides:
-    public boolean play(Scanner scanner, Player player) {
-        // Haal de vraag één keer op via de abstracte methode
-        String vraag = getVraag();
-
+    // Nieuwe overload zodat je een specifieke vraag kunt stellen
+    public boolean play(Scanner scanner, Player player, String vraag) {
         // Toon de vraag
         System.out.println("\n— " + vraag + " —");
         String antwoord = scanner.nextLine().trim();
 
+        // Assistent-commando
+        if (antwoord.equalsIgnoreCase("gebruik assistent")) {
+            Assistant assistant = new Assistant(java.util.List.of(
+                new HintAction(),
+                new EducationalAidAction(),
+                new MotivationalMessageAction()
+            ));
+            assistant.activate(this, player, scanner);
+            // Vraag opnieuw om antwoord
+            System.out.print("Typ je antwoord: ");
+            antwoord = scanner.nextLine().trim();
+        }
+
         // Joker‐check tijdens het beantwoorden
         if (antwoord.equalsIgnoreCase("joker")) {
-            if (!player.jokerAvailable) {
-                System.out.println("❌ Je hebt je Joker al gebruikt! Probeer alsnog de vraag te beantwoorden:");
+            Player.JokerResult jokerResult = player.vraagEnVerwerkJoker(scanner, "vraag");
+            if (jokerResult == Player.JokerResult.GEBRUIKT) {
+                return true;
+            } else if (jokerResult == Player.JokerResult.GEEN_JOKER_MEER) {
                 System.out.print("Typ je antwoord: ");
                 antwoord = scanner.nextLine().trim();
-            } else {
-                player.jokerAvailable = false;
-                System.out.println("🃏 Joker gebruikt! Vraag automatisch goed gerekend.");
-                return true;
             }
         }
 
-        // Shortcut (zoals je vroeger ‘1234’ gebruikte)
+        // Shortcut (zoals je vroeger '1234' gebruikte)
         if (antwoord.equals("1234")) {
             return true;
         }
 
         // Normale evaluatie via je evaluator-strategie
-        String fb = evaluator.evaluate(getVraag(), antwoord);
+        String fb = evaluator.evaluate(vraag, antwoord);
         String[] parts = fb.split(":", 2);
-        if (parts.length > 1) {
-            System.out.println(fb); // print eenmalig de GOED: ... of FOUT: ...
-            return parts[0].equalsIgnoreCase("GOED");
-        } else {
-            System.out.println("⚠️ Antwoord niet herkend.");
-            return false;
-        }
+        boolean correct = parts[0].equals("GOED");
+        System.out.println(fb); // print eenmalig de GOED: ... of FOUT: ...
+        return correct;
     }
 
     // Laat deze factory‐methode precies staan zoals-ie was:
@@ -65,5 +69,10 @@ public abstract class Room {
                 return vraag;
             }
         };
+    }
+
+    // Geeft een educatief hulpmiddel terug (kan per kamer overschreven worden)
+    public String getEducationalAid() {
+        return "Stappenplan: Lees de vraag goed, denk na, en geef een zo volledig mogelijk antwoord.";
     }
 }

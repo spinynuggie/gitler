@@ -2,9 +2,11 @@ package org.example;
 
 import java.util.*;
 import java.util.stream.*;
+import org.example.questions.Question;
 
 public class GameMap {
     private static final Map<Integer, List<Integer>> BUREN;
+    private static final List<String> CATEGORIES = new ArrayList<>(Questions.allCategories());
     static {
         Map<Integer, List<Integer>> tmp = new HashMap<>();
         for (int i = 1; i <= 9; i++) {
@@ -23,7 +25,7 @@ public class GameMap {
     private final int swordRoomId;
     final int roomCount;
     final List<Room> rooms;
-    private final Map<Integer, Room> roomsById;
+    final Map<Integer, Room> roomsById;
 
     public GameMap() {
         this(new Random().nextLong());
@@ -38,10 +40,15 @@ public class GameMap {
         this.rooms = new ArrayList<>(roomCount);
         this.roomsById = new HashMap<>(roomCount);
         Set<Integer> idSet = new HashSet<>(ids);
-        for (int id : ids) {
+        for (int i = 0; i < ids.size(); i++) {
+            int id = ids.get(i);
             String opening = buildOpeningString(id, idSet);
-            Question q = Questions.get(rnd.nextInt(Questions.size()));
-            Room room = Room.of(id, q.getName(), q.getText(), new GeminiEvaluationStrategy(), opening);
+            String category = CATEGORIES.get(i % CATEGORIES.size());
+            List<Question> vragen = new ArrayList<>(Questions.byCategory(category));
+            Collections.shuffle(vragen, rnd);
+            List<Question> vragenVoorKamer = vragen.subList(0, Math.min(5, vragen.size()));
+            Question hoofdVraag = vragenVoorKamer.getFirst();
+            Room room = Room.of(id, hoofdVraag.getCategory(), hoofdVraag.getText(), new GeminiEvaluationStrategy(), opening);
             rooms.add(room);
             roomsById.put(id, room);
         }
@@ -153,6 +160,16 @@ public class GameMap {
 
             for (StringBuilder sb : lines) {
                 System.out.print(sb);
+            }
+        }
+        // Show inventory after the map
+        System.out.println("\n🎒 Inventory:");
+        var items = player.getInventory().getAllItems();
+        if (items.isEmpty()) {
+            System.out.println("  (leeg)");
+        } else {
+            for (var item : items) {
+                System.out.println("  - " + item.getName() + ": " + item.getDescription());
             }
         }
     }
