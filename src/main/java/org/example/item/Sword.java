@@ -5,12 +5,11 @@ public class Sword extends Item {
 
     public Sword() {
         super("Zwaard", "Een krachtig zwaard dat extra schade doet aan monsters");
-        this.damage = 3; // Zelfde schade als voorheen
+        this.damage = 3;
     }
 
     @Override
     public void use() {
-        // Zwaard is een passief item, wordt automatisch gebruikt in gevechten
     }
 
     public int getDamage() {

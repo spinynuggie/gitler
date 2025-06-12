@@ -19,7 +19,7 @@ public class Monster {
 
     public void takeDamage(int dmg) {
         health = Math.max(health - dmg, 0);
-        System.out.printf("🗡️  Je raakt %s voor %d (Monster HP: %d)%n", name, dmg, health);
+        System.out.printf(Messages.MONSTER_DAMAGE, name, dmg, health);
     }
 
     public boolean isAlive() {
@@ -31,6 +31,6 @@ public class Monster {
     }
 
     public String getStats() {
-        return String.format("Naam: %s\nHP: %d\nAanvalskracht: %d", name, health, strength);
+        return String.format(Messages.MONSTER_STATS, name, health, strength);
     }
 }

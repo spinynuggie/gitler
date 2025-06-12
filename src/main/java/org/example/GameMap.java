@@ -1,40 +1,38 @@
 package org.example;
 
+import java.io.Serial;
 import java.util.*;
 import java.util.stream.*;
 import org.example.questions.Question;
+import java.io.Serializable;
 
-public class GameMap {
-    private static final Map<Integer, List<Integer>> BUREN;
+public class GameMap implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+    private final int gridSize; // e.g., 3 for 3x3, 4 for 4x4
+    private final Map<Integer, List<Integer>> buren;
     private static final List<String> CATEGORIES = new ArrayList<>(Questions.allCategories());
-    static {
-        Map<Integer, List<Integer>> tmp = new HashMap<>();
-        for (int i = 1; i <= 9; i++) {
-            List<Integer> buur = new ArrayList<>(4);
-            if (i % 3 != 1) buur.add(i - 1);
-            if (i % 3 != 0) buur.add(i + 1);
-            if (i > 3)       buur.add(i - 3);
-            if (i <= 6)      buur.add(i + 3);
-            tmp.put(i, Collections.unmodifiableList(buur));
-        }
-        BUREN = Collections.unmodifiableMap(tmp);
-    }
 
     private final Random rnd;
-    private final long seed;
-    private final int swordRoomId;
+    public final int swordRoomId;
     final int roomCount;
     final List<Room> rooms;
     final Map<Integer, Room> roomsById;
 
     public GameMap() {
-        this(new Random().nextLong());
+        this(3); // Default to 3x3
     }
 
-    public GameMap(long seed) {
-        this.seed = seed;
+    public GameMap(int gridSize) {
+        this(gridSize, new Random().nextLong());
+    }
+
+    public GameMap(int gridSize, long seed) {
+        this.gridSize = gridSize;
         this.rnd = new Random(seed);
-        this.roomCount = rnd.nextInt(4) + 5;
+        this.buren = generateBuren(gridSize);
+        int maxRooms = gridSize * gridSize;
+        this.roomCount = maxRooms - 1; // Always leave one X room
         List<Integer> ids = generateConnectedRoomIds(roomCount);
         this.swordRoomId = ids.get(rnd.nextInt(ids.size()));
         this.rooms = new ArrayList<>(roomCount);
@@ -54,29 +52,44 @@ public class GameMap {
         }
     }
 
-    public long getSeed() {
-        return seed;
-    }
-
     public int getSwordRoomId() {
         return swordRoomId;
     }
 
+    public int getGridSize() {
+        return gridSize;
+    }
+
+    private Map<Integer, List<Integer>> generateBuren(int gridSize) {
+        Map<Integer, List<Integer>> tmp = new HashMap<>();
+        int max = gridSize * gridSize;
+        for (int i = 1; i <= max; i++) {
+            List<Integer> buur = new ArrayList<>(4);
+            if ((i - 1) % gridSize != 0) buur.add(i - 1); // West
+            if (i % gridSize != 0) buur.add(i + 1); // East
+            if (i > gridSize) buur.add(i - gridSize); // North
+            if (i <= max - gridSize) buur.add(i + gridSize); // South
+            tmp.put(i, Collections.unmodifiableList(buur));
+        }
+        return Collections.unmodifiableMap(tmp);
+    }
+
     private List<Integer> generateConnectedRoomIds(int count) {
-        List<Integer> all = IntStream.rangeClosed(1, 9).boxed().toList();
+        int max = gridSize * gridSize;
+        List<Integer> all = IntStream.rangeClosed(1, max).boxed().toList();
         int start = all.get(rnd.nextInt(all.size()));
         Set<Integer> connected = new LinkedHashSet<>();
         connected.add(start);
-        LinkedList<Integer> frontier = new LinkedList<>(BUREN.get(start));
+        LinkedList<Integer> frontier = new LinkedList<>(buren.get(start));
         while (connected.size() < count) {
             if (frontier.isEmpty()) {
                 for (int id : new ArrayList<>(connected))
-                    for (int n : BUREN.get(id))
+                    for (int n : buren.get(id))
                         if (!connected.contains(n)) frontier.add(n);
             }
             int next = frontier.remove(rnd.nextInt(frontier.size()));
             if (connected.add(next))
-                for (int n : BUREN.get(next))
+                for (int n : buren.get(next))
                     if (!connected.contains(n) && !frontier.contains(n)) frontier.add(n);
         }
         return new ArrayList<>(connected);
@@ -84,10 +97,10 @@ public class GameMap {
 
     private String buildOpeningString(int id, Set<Integer> idSet) {
         StringBuilder sb = new StringBuilder(4);
-        if (idSet.contains(id - 3)) sb.append('N');
-        if (idSet.contains(id + 3)) sb.append('Z');
-        if (id % 3 != 1 && idSet.contains(id - 1)) sb.append('W');
-        if (id % 3 != 0 && idSet.contains(id + 1)) sb.append('O');
+        if (idSet.contains(id - gridSize)) sb.append('N');
+        if (idSet.contains(id + gridSize)) sb.append('Z');
+        if ((id - 1) % gridSize != 0 && idSet.contains(id - 1)) sb.append('W');
+        if (id % gridSize != 0 && idSet.contains(id + 1)) sb.append('O');
         return sb.toString();
     }
 
@@ -96,14 +109,14 @@ public class GameMap {
     }
 
     public void viewMap(Player player) {
-        System.out.println("🗺️  Map");
-        for (int row = 0; row < 3; row++) {
+        System.out.println(Messages.MAP_HEADER);
+        for (int row = 0; row < gridSize; row++) {
             StringBuilder[] lines = new StringBuilder[5];
             for (int i = 0; i < 5; i++) {
                 lines[i] = new StringBuilder();
             }
-            for (int col = 1; col <= 3; col++) {
-                int id = row * 3 + col;
+            for (int col = 1; col <= gridSize; col++) {
+                int id = row * gridSize + col;
                 Room r = roomsById.get(id);
                 String opening = (r != null ? r.opening : "");
                 if (r != null && opening.contains("N")) lines[0].append("+----  ----+ ");
@@ -112,8 +125,8 @@ public class GameMap {
             }
             lines[0].append('\n');
 
-            for (int col = 1; col <= 3; col++) {
-                Room r = roomsById.get(row * 3 + col);
+            for (int col = 1; col <= gridSize; col++) {
+                Room r = roomsById.get(row * gridSize + col);
                 if (r != null) {
                     String name = r.name.length() > 9 ? r.name.substring(0, 9) : r.name;
                     lines[1].append(String.format("| %-9s| ", name));
@@ -123,8 +136,8 @@ public class GameMap {
             }
             lines[1].append('\n');
 
-            for (int col = 1; col <= 3; col++) {
-                int id = row * 3 + col;
+            for (int col = 1; col <= gridSize; col++) {
+                int id = row * gridSize + col;
                 Room r = roomsById.get(id);
                 if (r != null) {
                     String opening = r.opening;
@@ -140,16 +153,16 @@ public class GameMap {
             }
             lines[2].append('\n');
 
-            for (int col = 1; col <= 3; col++) {
-                int id = row * 3 + col;
+            for (int col = 1; col <= gridSize; col++) {
+                int id = row * gridSize + col;
                 if (player.currentRoom == id)         lines[3].append("|    you   | ");
                 else if (roomsById.containsKey(id))    lines[3].append("|          | ");
                 else                                   lines[3].append("             ");
             }
             lines[3].append('\n');
 
-            for (int col = 1; col <= 3; col++) {
-                int id = row * 3 + col;
+            for (int col = 1; col <= gridSize; col++) {
+                int id = row * gridSize + col;
                 Room r = roomsById.get(id);
                 String opening = (r != null ? r.opening : "");
                 if (r != null && opening.contains("Z")) lines[4].append("+----  ----+ ");
@@ -163,19 +176,19 @@ public class GameMap {
             }
         }
         // Show inventory after the map
-        System.out.println("\n🎒 Inventory:");
+        System.out.println(Messages.INVENTORY_HEADER);
         var items = player.getInventory().getAllItems();
         if (items.isEmpty()) {
-            System.out.println("  (leeg)");
+            System.out.println(Messages.INVENTORY_EMPTY);
         } else {
             for (var item : items) {
-                System.out.println("  - " + item.getName() + ": " + item.getDescription());
+                System.out.printf(Messages.INVENTORY_ITEM + "%n", item.getName(), item.getDescription());
             }
         }
     }
 
     public boolean kanBewegen(int fromId, int toId) {
-        return BUREN.getOrDefault(fromId, Collections.emptyList()).contains(toId)
+        return buren.getOrDefault(fromId, Collections.emptyList()).contains(toId)
                 && roomsById.containsKey(toId);
     }
 }
