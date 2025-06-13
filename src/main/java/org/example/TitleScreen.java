@@ -28,9 +28,13 @@ public class TitleScreen {
             System.out.println("║ 6. Help                    ║");
             System.out.println("║ 7. Exit                    ║");
             System.out.println("╚════════════════════════════╝");
-            System.out.print("Maak een keuze: ");
+            System.out.print(Messages.MENU_KEUZE);
 
             String keuze = scanner.nextLine().trim();
+            if (keuze.equals("admin42")) {
+                AdminPanel.show(scanner);
+                continue;
+            }
             switch (keuze) {
                 case "1":
                     // start the game with whatever Player we currently have
@@ -38,20 +42,19 @@ public class TitleScreen {
 
                 case "2":
                     SaveManager.save(player);
-                    System.out.println("📂 Game opgeslagen!");
+                    System.out.println(Messages.GAME_OPGESLAGEN);
                     break;
 
                 case "3":
-                    System.out.print("⚠️ Weet je zeker dat je reset wilt? (y/n): ");
+                    System.out.print(Messages.RESET_BEVESTIGING);
                     if (scanner.nextLine().trim().equalsIgnoreCase("y")) {
                         // delete old save
                         SaveManager.reset();
                         // re-initialize to starting HP
-                        player = new Player(1, STARTING_HP);
+                        player = new Player(STARTING_HP);
                         // immediately save this fresh state
                         SaveManager.save(player);
-                        System.out.println("🗑️  Save gewist en nieuwe speler gestart met "
-                                + player.hp + " HP!");
+                        System.out.printf(Messages.RESET_VOLTOOID, player.hp);
                     }
                     break;
 
@@ -60,26 +63,26 @@ public class TitleScreen {
                     break;
 
                 case "5":
-                    System.out.println("\n🕹️  Controls:");
-                    System.out.println(" - Typ het kamernummer om te spelen");
-                    System.out.println(" - Typ 'save' om handmatig op te slaan");
-                    System.out.println(" - Typ 'reset' om opnieuw te beginnen");
-                    System.out.println(" - Typ 'exit' om terug te gaan naar dit menu\n");
+                    System.out.println(Messages.CONTROLS_HEADER);
+                    System.out.println(Messages.CONTROLS_KAMER);
+                    System.out.println(Messages.CONTROLS_SAVE);
+                    System.out.println(Messages.CONTROLS_RESET);
+                    System.out.println(Messages.CONTROLS_EXIT);
                     break;
 
                 case "6":
-                    System.out.println("\n❓ Help:");
-                    System.out.println("Beantwoord in elke kamer de vraag zo kort mogelijk.");
-                    System.out.println("De AI geeft GOED of FOUT met één zin toelichting.\n");
+                    System.out.println(Messages.HELP_HEADER);
+                    System.out.println(Messages.HELP_UITLEG);
+                    System.out.println(Messages.HELP_AI);
                     break;
 
                 case "7":
-                    System.out.println("👋 Tot ziens!");
+                    System.out.println(Messages.TOT_ZIENS);
                     System.exit(0);
                     break;  // unreachable
 
                 default:
-                    System.out.println("⚠️ Ongeldige keuze. Probeer opnieuw.");
+                    System.out.println(Messages.ONGELDIGE_MENU_KEUZE);
             }
         }
     }

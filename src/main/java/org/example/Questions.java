@@ -1,27 +1,57 @@
 package org.example;
 
 import java.util.*;
+import java.nio.file.*;
+import java.io.IOException;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.example.questions.Question;
 
 public final class Questions {
+    private static final String QUESTIONS_JSON = "src/main/java/org/example/questions/questions.json";
+    private static List<Question> LIST = new ArrayList<>();
+
     private Questions() {}
 
-    private static final List<Question> LIST = List.of(
-            new Question("Sprint Planning",  "Wat is de rol van de PO?"),
-            new Question("Daily Scrum",       "Wat bespreek je tijdens een Daily Scrum?"),
-            new Question("Sprint Review",     "Wat toon je tijdens de Sprint Review?")
-    );
-
-    public static List<Question> all()     { return LIST; }
-    public static Question get(int i)      { return LIST.get(i); }
-    public static int size()               { return LIST.size(); }
-    public static Question random()        { return LIST.get(new Random().nextInt(LIST.size())); }
-}
-
-class Question {
-    private final String name, text;
-    public Question(String name, String text) {
-        this.name = name; this.text = text;
+    static {
+        loadQuestions();
     }
-    public String getName() { return name; }
-    public String getText() { return text; }
+
+    private static void loadQuestions() {
+        LIST = new ArrayList<>();
+        try {
+            String json = Files.readString(Paths.get(QUESTIONS_JSON));
+            Gson gson = new Gson();
+            LIST = gson.fromJson(json, new TypeToken<List<Question>>(){}.getType());
+            if (LIST == null) LIST = new ArrayList<>();
+        } catch (IOException e) {
+            System.err.println("Kan questions.json niet lezen: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Fout bij parsen van questions.json: " + e.getMessage());
+        }
+    }
+
+    public static void reload() {
+        loadQuestions();
+    }
+
+    public static Question get(int i)      { return LIST.get(i); }
+
+    public static List<Question> byCategory(String category) {
+        List<Question> result = new ArrayList<>();
+        for (Question q : LIST) {
+            if (q.getCategory().equalsIgnoreCase(category)) {
+                result.add(q);
+            }
+        }
+        return result;
+    }
+
+    public static Set<String> allCategories() {
+        Set<String> categories = new LinkedHashSet<>();
+        for (Question q : LIST) {
+            categories.add(q.getCategory());
+        }
+        return categories;
+    }
 }

@@ -1,14 +1,33 @@
 package org.example;
 
-public class MonsterFactory {
-    public static Monster createMonsterFor(Room room) {
-        String name = room.name.toLowerCase();
+import java.util.List;
+import java.util.Random;
 
-        return switch (name) {
-            case "daily scrum" -> new Monster("Scrum Gremlin", 2, 8, new AttackStrategy());
-            case "sprint planning" -> new Monster("Planning Orc", 4, 12, new AttackStrategy());
-            case "sprint review" -> new Monster("Feedback Fiend", 3, 10, new AttackStrategy());
-            default -> new Monster("Generic Goblin", 3, 10, new AttackStrategy());
-        };
+public class MonsterFactory {
+    private static final List<MonsterTemplate> MONSTER_TEMPLATES = List.of(
+        new MonsterTemplate("Scrum Gremlin", 2, 3),
+        new MonsterTemplate("Planning Orc", 4, 5),
+        new MonsterTemplate("Feedback Fiend", 3, 4),
+        new MonsterTemplate("Generic Goblin", 3, 4),
+        new MonsterTemplate("Kanban Kobold", 2, 3),
+        new MonsterTemplate("Retro Wraith", 3, 5),
+        new MonsterTemplate("Agile Imp", 2, 4)
+    );
+    private static final Random RANDOM = new Random();
+
+    public static Monster createMonsterFor() {
+        MonsterTemplate template = MONSTER_TEMPLATES.get(RANDOM.nextInt(MONSTER_TEMPLATES.size()));
+        return new Monster(template.name, template.strength, template.health, new AttackStrategy());
+    }
+
+    private static class MonsterTemplate {
+        final String name;
+        final int strength;
+        final int health;
+        MonsterTemplate(String name, int strength, int health) {
+            this.name = name;
+            this.strength = strength;
+            this.health = health;
+        }
     }
 }

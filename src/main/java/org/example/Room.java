@@ -1,69 +1,70 @@
 package org.example;
 
-import java.util.Scanner;
+import org.example.item.Item;
 
-public abstract class Room {
+import java.io.Serial;
+import java.io.Serializable;
+
+public class Room implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
     public final int id;
     public final String name;
     private final EvaluationStrategy evaluator;
     public final String opening;
+    private final String vraag;
+    private Item item;
 
-    protected Room(int id, String name, EvaluationStrategy evaluator, String opening) {
+    private Room(int id, String name, String vraag, EvaluationStrategy evaluator, String opening) {
         this.id = id;
         this.name = name;
         this.evaluator = evaluator;
         this.opening = opening;
+        this.vraag = vraag;
+        this.item = null;
     }
 
-    // 1) Houd alleen deze abstracte definitie over:
-    protected abstract String getVraag();
+    public String getVraag() {
+        return vraag;
+    }
 
-    // 2) Pas hier alleen de play-methode aan; verwijder alle andere getVraag‐overrides:
-    public boolean play(Scanner scanner, Player player) {
-        // Haal de vraag één keer op via de abstracte methode
-        String vraag = getVraag();
+    public void setItem(Item item) {
+        this.item = item;
+    }
 
-        // Toon de vraag
-        System.out.println("\n— " + vraag + " —");
-        String antwoord = scanner.nextLine().trim();
+    public Item getItem() {
+        return item;
+    }
 
-        // Joker‐check tijdens het beantwoorden
-        if (antwoord.equalsIgnoreCase("joker")) {
-            if (!player.jokerAvailable) {
-                System.out.println("❌ Je hebt je Joker al gebruikt! Probeer alsnog de vraag te beantwoorden:");
-                System.out.print("Typ je antwoord: ");
-                antwoord = scanner.nextLine().trim();
-            } else {
-                player.jokerAvailable = false;
-                System.out.println("🃏 Joker gebruikt! Vraag automatisch goed gerekend.");
-                return true;
-            }
-        }
+    public Item takeItem() {
+        Item pickedItem = this.item;
+        this.item = null;
+        return pickedItem;
+    }
 
-        // Shortcut (zoals je vroeger ‘1234’ gebruikte)
-        if (antwoord.equals("1234")) {
+    public boolean hasItem() {
+        return this.item != null;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    // Simplified play method that only handles evaluation
+    public boolean evaluateAnswer(String answer, String currentVraag) {
+        if (answer.equals("1234")) { // Keep debug/testing shortcut
             return true;
         }
 
-        // Normale evaluatie via je evaluator-strategie
-        String fb = evaluator.evaluate(getVraag(), antwoord);
+        String fb = evaluator.evaluate(currentVraag, answer);
         String[] parts = fb.split(":", 2);
-        if (parts.length > 1) {
-            System.out.println(fb); // print eenmalig de GOED: ... of FOUT: ...
-            return parts[0].equalsIgnoreCase("GOED");
-        } else {
-            System.out.println("⚠️ Antwoord niet herkend.");
-            return false;
-        }
+        boolean correct = parts[0].equals("GOED");
+        System.out.println(fb);
+        return correct;
     }
 
-    // Laat deze factory‐methode precies staan zoals-ie was:
+    // Factory method
     public static Room of(int id, String name, String vraag, EvaluationStrategy evaluator, String opening) {
-        return new Room(id, name, evaluator, opening) {
-            @Override
-            protected String getVraag() {
-                return vraag;
-            }
-        };
+        return new Room(id, name, vraag, evaluator, opening);
     }
 }
