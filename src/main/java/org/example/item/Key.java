@@ -2,11 +2,11 @@ package org.example.item;
 
 public class Key extends Item {
     public Key() {
-        super("Key", "Unlocks a part of the exit. Collect them all!");
+        super("Sleutel", "Ontgrendelt de EXIT. Vind alle sleutels om te winnen!");
     }
 
     @Override
     public void use() {
-        System.out.println("You look at the key. It seems important for the exit.");
+        System.out.println("Je kijkt naar de sleutel.");
     }
 } 

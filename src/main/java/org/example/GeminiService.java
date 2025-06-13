@@ -29,8 +29,18 @@ public class GeminiService {
         try {
             String safePrompt = prompt.replace("\"", "\\\"");
             String jsonBody = """
-                {"contents":[{"parts":[{"text":"%s"}]}]}
-                """.formatted(safePrompt);
+{
+  "contents": [
+    { "parts": [ { "text": "%s" } ] }
+  ],
+  "generationConfig": {
+    "temperature": 0.25,
+    "maxOutputTokens": 30,
+    "topP": 0.95,
+    "topK": 40
+  }
+}
+""".formatted(safePrompt);
 
             if (debug) {
                 System.out.println("[DEBUG] Request JSON:");
