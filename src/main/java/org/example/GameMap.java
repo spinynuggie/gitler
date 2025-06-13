@@ -4,6 +4,7 @@ import java.io.Serial;
 import java.util.*;
 import java.util.stream.*;
 import org.example.questions.Question;
+import org.example.item.Key;
 import java.io.Serializable;
 
 public class GameMap implements Serializable {
@@ -15,12 +16,15 @@ public class GameMap implements Serializable {
 
     private final Random rnd;
     public final int swordRoomId;
+    public final int exitId;
+    public final int startRoomId;
     final int roomCount;
     final List<Room> rooms;
     final Map<Integer, Room> roomsById;
+    public final int keysRequired;
 
     public GameMap() {
-        this(3); // Default to 3x3
+        this(3, new Random().nextLong());
     }
 
     public GameMap(int gridSize) {
@@ -31,15 +35,48 @@ public class GameMap implements Serializable {
         this.gridSize = gridSize;
         this.rnd = new Random(seed);
         this.buren = generateBuren(gridSize);
-        int maxRooms = gridSize * gridSize;
-        this.roomCount = maxRooms - 1; // Always leave one X room
-        List<Integer> ids = generateConnectedRoomIds(roomCount);
-        this.swordRoomId = ids.get(rnd.nextInt(ids.size()));
+        int maxGridId = gridSize * gridSize;
+
+        int minRooms, maxRoomsForGrid;
+        switch (gridSize) {
+            case 3: minRooms = 5; maxRoomsForGrid = 7; break;
+            case 4: minRooms = 10; maxRoomsForGrid = 14; break;
+            case 5: minRooms = 17; maxRoomsForGrid = 23; break;
+            default:
+                minRooms = (int) (maxGridId * 0.5);
+                maxRoomsForGrid = (int) (maxGridId * 0.9);
+                break;
+        }
+        this.roomCount = rnd.nextInt(maxRoomsForGrid - minRooms + 1) + minRooms;
+        this.keysRequired = switch (gridSize) {
+            case 3 -> 1;
+            case 4 -> 3;
+            case 5 -> 5;
+            default -> 1;
+        };
+
+        List<Integer> roomIds = generateConnectedRoomIds(roomCount);
+        Set<Integer> roomIdsSet = new HashSet<>(roomIds);
+        List<Integer> xRoomIds = new ArrayList<>();
+        for (int i = 1; i <= maxGridId; i++) {
+            if (!roomIdsSet.contains(i)) {
+                xRoomIds.add(i);
+            }
+        }
+
+        this.startRoomId = xRoomIds.get(rnd.nextInt(xRoomIds.size()));
+
+        List<Integer> potentialExitIds = new ArrayList<>(xRoomIds);
+        potentialExitIds.remove(Integer.valueOf(startRoomId));
+
+        this.exitId = findFarthestEdgeXRoom(startRoomId, potentialExitIds);
+        this.swordRoomId = roomIds.get(rnd.nextInt(roomIds.size()));
+        
         this.rooms = new ArrayList<>(roomCount);
         this.roomsById = new HashMap<>(roomCount);
-        Set<Integer> idSet = new HashSet<>(ids);
-        for (int i = 0; i < ids.size(); i++) {
-            int id = ids.get(i);
+        Set<Integer> idSet = new HashSet<>(roomIds);
+        for (int i = 0; i < roomIds.size(); i++) {
+            int id = roomIds.get(i);
             String opening = buildOpeningString(id, idSet);
             String category = CATEGORIES.get(i % CATEGORIES.size());
             List<Question> vragen = new ArrayList<>(Questions.byCategory(category));
@@ -49,6 +86,18 @@ public class GameMap implements Serializable {
             Room room = Room.of(id, hoofdVraag.getCategory(), hoofdVraag.getText(), new GeminiEvaluationStrategy(), opening);
             rooms.add(room);
             roomsById.put(id, room);
+        }
+        placeKeys(keysRequired);
+    }
+
+    private void placeKeys(int numKeys) {
+        List<Room> possibleRooms = new ArrayList<>(rooms);
+        // Ensure sword room doesn't have a key
+        possibleRooms.remove(roomsById.get(swordRoomId));
+        Collections.shuffle(possibleRooms, rnd);
+
+        for (int i = 0; i < numKeys && i < possibleRooms.size(); i++) {
+            possibleRooms.get(i).setItem(new Key());
         }
     }
 
@@ -141,12 +190,13 @@ public class GameMap implements Serializable {
                 Room r = roomsById.get(id);
                 if (r != null) {
                     String opening = r.opening;
-                    boolean west  = opening.contains("W");
+                    boolean west = opening.contains("W");
                     boolean oost = opening.contains("O");
-                    if (west && oost)      lines[2].append(String.format("  kamer %-3d  ", id));
-                    else if (oost)         lines[2].append(String.format("| kamer %-3d  ", id));
-                    else if (west)         lines[2].append(String.format("  kamer %-3d| ", id));
-                    else                   lines[2].append(String.format("| kamer %-3d| ", id));
+                    String left = west ? " " : "|";
+                    String right = oost ? " " : "|";
+                    lines[2].append(String.format("%s  Kamer   %s ", left, right));
+                } else if (id == exitId) {
+                    lines[2].append("    EXIT     ");
                 } else {
                     lines[2].append("     X       ");
                 }
@@ -155,7 +205,15 @@ public class GameMap implements Serializable {
 
             for (int col = 1; col <= gridSize; col++) {
                 int id = row * gridSize + col;
-                if (player.currentRoom == id)         lines[3].append("|    you   | ");
+                if (player.currentRoom == id)         lines[3].append("|    \uD83E\uDDD1    | ");
+                else if (id == exitId) {
+                    long keyCount = player.getInventory().countItems(Key.class);
+                    if (keyCount >= keysRequired) {
+                        lines[3].append("|   EXIT   | ");
+                    } else {
+                        lines[3].append(String.format("| \uD83D\uDD12 %d/%d   | ", keyCount, keysRequired));
+                    }
+                }
                 else if (roomsById.containsKey(id))    lines[3].append("|          | ");
                 else                                   lines[3].append("             ");
             }
@@ -190,5 +248,58 @@ public class GameMap implements Serializable {
     public boolean kanBewegen(int fromId, int toId) {
         return buren.getOrDefault(fromId, Collections.emptyList()).contains(toId)
                 && roomsById.containsKey(toId);
+    }
+
+    public boolean allRoomsCompleted(Set<Integer> completedRooms) {
+        return completedRooms.equals(roomsById.keySet());
+    }
+
+    private int findFarthestEdgeXRoom(int startId, List<Integer> xRooms) {
+        List<Integer> edgeXRooms = new ArrayList<>();
+        for (int id : xRooms) {
+            int row = (id - 1) / gridSize;
+            int col = (id - 1) % gridSize;
+            if (row == 0 || row == gridSize - 1 || col == 0 || col == gridSize - 1) {
+                edgeXRooms.add(id);
+            }
+        }
+
+        // Verwijder buren van de startpositie om te voorkomen dat je naast de uitgang spawnt
+        List<Integer> startNeighbors = buren.getOrDefault(startId, Collections.emptyList());
+        List<Integer> nonAdjacentEdgeXRooms = new ArrayList<>(edgeXRooms);
+        nonAdjacentEdgeXRooms.removeAll(startNeighbors);
+
+        // Gebruik de niet-aangrenzende kamers indien mogelijk, anders de volledige lijst met randkamers
+        List<Integer> searchList = nonAdjacentEdgeXRooms.isEmpty() ? edgeXRooms : nonAdjacentEdgeXRooms;
+
+        if (searchList.isEmpty()) {
+            // Fallback voor het geval er geen rand-X-kamers zijn (onwaarschijnlijk)
+            if (xRooms.isEmpty()) {
+                return -1; // Mag niet gebeuren
+            }
+            // Kies een willekeurige X-kamer die niet de startkamer is
+            return xRooms.get(rnd.nextInt(xRooms.size()));
+        }
+
+        int farthestRoom = -1;
+        int maxDist = -1;
+
+        int startX = (startId - 1) % gridSize;
+        int startY = (startId - 1) / gridSize;
+
+        for (int edgeRoomId : searchList) {
+            int edgeX = (edgeRoomId - 1) % gridSize;
+            int edgeY = (edgeRoomId - 1) / gridSize;
+            int dist = Math.abs(startX - edgeX) + Math.abs(startY - edgeY); // Manhattan-afstand
+            if (dist > maxDist) {
+                maxDist = dist;
+                farthestRoom = edgeRoomId;
+            }
+        }
+        return farthestRoom;
+    }
+
+    public boolean isAdjacent(int fromId, int toId) {
+        return buren.getOrDefault(fromId, Collections.emptyList()).contains(toId);
     }
 }

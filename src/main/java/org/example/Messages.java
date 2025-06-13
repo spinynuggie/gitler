@@ -50,9 +50,6 @@ public class Messages {
     public static final String INVENTORY_EMPTY = "  (leeg)";
     public static final String INVENTORY_ITEM = "  - %s: %s";
 
-    // Educational Aid messages
-    public static final String EDUCATIONAL_AID = "Educatief hulpmiddel: %s";
-
     // Settings messages
     public static final String SETTINGS_HEADER = "\n--- Settings ---";
     public static final String SETTINGS_DEBUG = "1. Toggle DEBUG (nu %s)";
@@ -68,14 +65,9 @@ public class Messages {
     public static final String MONSTER_DAMAGE = "🗡️  Je raakt %s voor %d (Monster HP: %d)%n";
     public static final String MONSTER_STATS = "Naam: %s\nHP: %d\nAanvalskracht: %d";
 
-    // Motivational messages
-    public static final String MOTIVATIONAL_PREFIX = "Motivatie: ";
-    public static final String[] MOTIVATIONAL_MESSAGES = {
-        "Je denkt als een echte product owner!",
-        "Goed bezig, hou vol!",
-        "Je bent op de goede weg!"
-    };
-
     // New message
     public static final String ASSISTANT_INFO = "💡 Typ 'gebruik assistent' als antwoord om een AI-hint te krijgen.";
+
+    // New message
+    public static final String FLEE_SUCCESS = "🏃‍♂️ Je bent succesvol gevlucht! Het monster blijft in deze kamer.";
 } 

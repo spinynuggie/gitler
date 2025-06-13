@@ -27,7 +27,24 @@ public class Inventory implements Serializable {
         return new ArrayList<>(items);
     }
 
+    public long countItems(Class<? extends Item> itemType) {
+        return items.stream().filter(itemType::isInstance).count();
+    }
+
     public void removeItem(Item item) {
         items.remove(item);
+    }
+
+    public void removeItems(Class<? extends Item> itemType, int count) {
+        List<Item> toRemove = new ArrayList<>();
+        for (Item item : items) {
+            if (itemType.isInstance(item)) {
+                toRemove.add(item);
+                if (toRemove.size() == count) {
+                    break;
+                }
+            }
+        }
+        items.removeAll(toRemove);
     }
 } 

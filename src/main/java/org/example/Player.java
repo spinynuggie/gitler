@@ -15,6 +15,7 @@ public class Player implements Serializable {
     public int currentRoom;
     public int score;
     public int hp;
+    public int stage;
     public Set<Integer> completedRooms = new HashSet<>();
     private GameMap map;
     private final Inventory inventory;
@@ -23,23 +24,13 @@ public class Player implements Serializable {
         this.inventory = new Inventory();
         this.inventory.addItem(new Joker()); // Start with a joker
         this.hp = startHp;
+        this.stage = 1;
     }
 
     public void setMap(GameMap map) {
         this.map = map;
-        // Zoek een X-kamer (id zonder Room)
-        int xRoomId = -1;
-        for (int id = 1; id <= map.getGridSize() * map.getGridSize(); id++) {
-            if (!map.roomsById.containsKey(id)) {
-                xRoomId = id;
-                break;
-            }
-        }
-        // Als er geen X-kamer is, fallback naar kamer 1
-        if (xRoomId == -1) {
-            xRoomId = 1;
-        }
-        this.currentRoom = xRoomId;
+        // The player's currentRoom is now set in Game.java before map creation
+        // to ensure the exit is placed correctly relative to the player's start.
     }
 
     public GameMap getMap() {
