@@ -133,21 +133,15 @@ public class GameManager {
 
         Player.JokerResult jokerResult = player.vraagEnVerwerkJoker(scanner, "kamer");
         if (jokerResult == Player.JokerResult.GEBRUIKT) {
-            player.completedRooms.add(targetId);
-            player.score += 10;
-            player.tryAcquireSword(targetId, gameMap.getSwordRoomId());
-            if (selectedRoom.hasItem()) {
-                player.getInventory().addItem(selectedRoom.takeItem());
-                System.out.println("Je hebt een sleutel gevonden!");
-            }
-            SaveManager.save(player);
+            completeRoom(targetId, selectedRoom);
             return;
         } else if (jokerResult == Player.JokerResult.GEEN_JOKER_MEER) {
             return;
         }
 
         Monster monster = monstersPerRoom.computeIfAbsent(targetId, k -> MonsterFactory.createMonsterFor());
-        Battle battle = new Battle(scanner, player, monster, selectedRoom, gameMap);
+        Assistant assistant = new Assistant(new AssistantHintProvider());
+        Battle battle = new Battle(scanner, player, monster, selectedRoom, gameMap, assistant);
         Battle.BattleResult result = battle.start();
         handleBattleResult(result, targetId, selectedRoom);
     }
@@ -155,21 +149,26 @@ public class GameManager {
     private void handleBattleResult(Battle.BattleResult result, int targetId, Room room) {
         if (result == Battle.BattleResult.WIN) {
             System.out.printf(Messages.KAMER_SCORE, targetId);
-            player.completedRooms.add(targetId);
-            player.score += 10;
-            player.tryAcquireSword(targetId, gameMap.getSwordRoomId());
-            if (room.hasItem()) {
-                player.getInventory().addItem(room.takeItem());
-                System.out.println("Je hebt een sleutel gevonden!");
-            }
-            SaveManager.save(player);
+            completeRoom(targetId, room);
         }
+    }
+
+    private void completeRoom(int roomId, Room room) {
+        player.completedRooms.add(roomId);
+        player.score += 10;
+        player.tryAcquireSword(roomId, gameMap.getSwordRoomId());
+        if (room.hasItem()) {
+            player.getInventory().addItem(room.takeItem());
+            System.out.println("Je hebt een sleutel gevonden!");
+        }
+        SaveManager.save(player);
     }
 
     private void finalBossBattle(Scanner scanner, Player player) {
         System.out.println("De eindbaas verschijnt!");
         Monster finalBoss = new Monster("Eindbaas", 5, 25, new AttackStrategy());
-        Battle battle = new Battle(scanner, player, finalBoss, null, player.getMap());
+        Assistant assistant = new Assistant(new AssistantHintProvider());
+        Battle battle = new Battle(scanner, player, finalBoss, null, player.getMap(), assistant);
         battle.startFinalBossBattle();
 
         if (player.hp > 0) {

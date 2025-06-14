@@ -1,6 +1,6 @@
 package org.example;
 
-public class HelpHintProvider implements HintProvider {
+public class HelpHintProvider extends AbstractHintProvider {
     private static final String HELP_HINT_PROMPT = """
 ### ROL
 Je bent een ervaren **Scrum-coach** (10+ jaar) die spelers van een educatieve game helpt zelf na te denken.
@@ -42,7 +42,7 @@ Antwoord uitsluitend met de hint-zin; geen toelichting of metadata.
 """;
 
     @Override
-    public String getHint(String question) {
-        return GeminiService.askGemini(HELP_HINT_PROMPT + question);
+    protected String getPrompt() {
+        return HELP_HINT_PROMPT;
     }
 }
