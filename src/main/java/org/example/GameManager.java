@@ -132,35 +132,28 @@ public class GameManager {
         if (selectedRoom == null) {
             player.currentRoom = targetId;
             System.out.println("Deze ruimte is leeg.");
-            return false;
-        }
-
-        if (player.completedRooms.contains(targetId)) {
+        } else if (player.completedRooms.contains(targetId)) {
             player.currentRoom = targetId;
             System.out.println(Messages.KAMER_VOLTOOID);
-            return false;
-        }
-
-        Player.JokerResult jokerResult = player.vraagEnVerwerkJoker(scanner, "kamer");
-        if (jokerResult == Player.JokerResult.GEBRUIKT) {
-            player.currentRoom = targetId;
-            completeRoom(targetId, selectedRoom);
-            return false;
-        } else if (jokerResult == Player.JokerResult.GEEN_JOKER_MEER) {
-            return false;
-        }
-
-        Monster monster = monstersPerRoom.computeIfAbsent(targetId, _ -> MonsterFactory.createMonsterFor());
-        Assistant assistant = new Assistant(new AssistantHintProvider());
-        EvaluationStrategy strategy = selectedRoom.getEvaluator();
-        Battle battle = new Battle(scanner, player, monster, selectedRoom, gameMap, assistant, strategy);
-        Battle.BattleResult result = battle.start();
-        if (result == Battle.BattleResult.WIN) {
-            player.currentRoom = targetId;
-            System.out.printf(Messages.KAMER_SCORE, targetId);
-            completeRoom(targetId, selectedRoom);
-        } else if (result == Battle.BattleResult.FLEE) {
-            System.out.println("Je bent gevlucht en blijft in je huidige kamer.");
+        } else {
+            Player.JokerResult jokerResult = player.vraagEnVerwerkJoker(scanner, "kamer");
+            if (jokerResult == Player.JokerResult.GEBRUIKT) {
+                player.currentRoom = targetId;
+                completeRoom(targetId, selectedRoom);
+            } else if (jokerResult != Player.JokerResult.GEEN_JOKER_MEER) {
+                Monster monster = monstersPerRoom.computeIfAbsent(targetId, _ -> MonsterFactory.createMonsterFor());
+                Assistant assistant = new Assistant(new AssistantHintProvider());
+                EvaluationStrategy strategy = selectedRoom.getEvaluator();
+                Battle battle = new Battle(scanner, player, monster, selectedRoom, gameMap, assistant, strategy);
+                Battle.BattleResult result = battle.start();
+                if (result == Battle.BattleResult.WIN) {
+                    player.currentRoom = targetId;
+                    System.out.printf(Messages.KAMER_SCORE, targetId);
+                    completeRoom(targetId, selectedRoom);
+                } else if (result == Battle.BattleResult.FLEE) {
+                    System.out.println("Je bent gevlucht en blijft in je huidige kamer.");
+                }
+            }
         }
         return false;
     }
@@ -183,7 +176,7 @@ public class GameManager {
         Battle battle = new Battle(scanner, player, finalBoss, null, player.getMap(), assistant, new GeminiEvaluationStrategy());
         battle.startFinalBossBattle();
 
-        if (player.getHp() > 0) 
+        if (player.getHp() > 0) {
             System.out.println("Gefeliciteerd! Je hebt Obama verslagen en de NAVO-Top gestopt!");
             Epilogue.showWin(scanner);
             SaveManager.reset();
@@ -191,4 +184,4 @@ public class GameManager {
             System.out.println("Helaas, Obama was te sterk. Game over.");
         }
     }
-} 
+}
