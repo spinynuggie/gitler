@@ -183,7 +183,7 @@ public class GameManager {
         Battle battle = new Battle(scanner, player, finalBoss, null, player.getMap(), assistant, new GeminiEvaluationStrategy());
         battle.startFinalBossBattle();
 
-        if (player.getHp() > 0) {
+        if (player.getHp() > 0) 
             System.out.println("Gefeliciteerd! Je hebt Obama verslagen en de NAVO-Top gestopt!");
             Epilogue.showWin(scanner);
             SaveManager.reset();
