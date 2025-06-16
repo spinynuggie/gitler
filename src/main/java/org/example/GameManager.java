@@ -170,15 +170,15 @@ public class GameManager {
 
     private void finalBossBattle(Scanner scanner, Player player) {
         System.out.println("De eindbaas verschijnt!");
-        Monster finalBoss = new Monster("Eindbaas", 5, 25, new AttackStrategy());
+        Monster finalBoss = new Monster("Barack Obama", 5, 25, new AttackStrategy());
         Assistant assistant = new Assistant(new AssistantHintProvider());
         Battle battle = new Battle(scanner, player, finalBoss, null, player.getMap(), assistant, new GeminiEvaluationStrategy());
         battle.startFinalBossBattle();
 
         if (player.getHp() > 0) {
-            System.out.println("Gefeliciteerd! Je hebt de eindbaas verslagen en het spel uitgespeeld!");
+            System.out.println("Gefeliciteerd! Je hebt Obama verslagen en de NAVO-Top gestopt!");
         } else {
-            System.out.println("Helaas, de eindbaas was te sterk. Game over.");
+            System.out.println("Helaas, Obama was te sterk. Game over.");
         }
     }
 } 
