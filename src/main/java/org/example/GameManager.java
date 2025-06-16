@@ -25,6 +25,10 @@ public class GameManager {
             initializeNewMap();
         }
 
+        if (player.getHp() <= 0) {
+            return;
+        }
+
         while (true) {
             if (handleExit()) {
                 if (player.stage > 3) {
@@ -36,6 +40,10 @@ public class GameManager {
             }
 
             if (handleInput()) {
+                return;
+            }
+
+            if (player.getHp() <= 0) {
                 return;
             }
         }
@@ -142,7 +150,7 @@ public class GameManager {
             return false;
         }
 
-        Monster monster = monstersPerRoom.computeIfAbsent(targetId, k -> MonsterFactory.createMonsterFor());
+        Monster monster = monstersPerRoom.computeIfAbsent(targetId, _ -> MonsterFactory.createMonsterFor());
         Assistant assistant = new Assistant(new AssistantHintProvider());
         EvaluationStrategy strategy = selectedRoom.getEvaluator();
         Battle battle = new Battle(scanner, player, monster, selectedRoom, gameMap, assistant, strategy);
@@ -177,6 +185,8 @@ public class GameManager {
 
         if (player.getHp() > 0) {
             System.out.println("Gefeliciteerd! Je hebt Obama verslagen en de NAVO-Top gestopt!");
+            Epilogue.showWin(scanner);
+            SaveManager.reset();
         } else {
             System.out.println("Helaas, Obama was te sterk. Game over.");
         }

@@ -11,7 +11,6 @@ public class Battle {
     private final Player player;
     private final Monster monster;
     private final Room room;
-    private final GameMap gameMap;
     private final Assistant assistant;
     private final EvaluationStrategy evaluator;
 
@@ -21,12 +20,11 @@ public class Battle {
         FLEE
     }
 
-    public Battle(Scanner scanner, Player player, Monster monster, Room room, GameMap gameMap, Assistant assistant, EvaluationStrategy evaluator) {
+    public Battle(Scanner scanner, Player player, Monster monster, Room room, GameMap ignoredGameMap, Assistant assistant, EvaluationStrategy evaluator) {
         this.scanner = scanner;
         this.player = player;
         this.monster = monster;
         this.room = room;
-        this.gameMap = gameMap;
         this.assistant = assistant;
         this.evaluator = evaluator;
     }
@@ -107,7 +105,7 @@ public class Battle {
         return allQuestions;
     }
 
-    private enum TurnResult { FOUGHT, FLED, CHECKED, JOKER_USED }
+    private enum TurnResult { FOUGHT, FLED, CHECKED}
 
     public TurnResult handleTurn(String vraag, boolean isFinalBoss) {
         while (true) {
@@ -198,7 +196,7 @@ public class Battle {
 
     private void processIncorrectAnswer(String vraag) {
         monster.hinder(player);
-        if (vraag != null) {
+        if (vraag != null && player.getHp() > 0) {
             HintSystem.maybeGiveHint(scanner, vraag);
         }
         SaveManager.save(player);
