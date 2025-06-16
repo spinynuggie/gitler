@@ -183,12 +183,12 @@ public class GameManager {
         Battle battle = new Battle(scanner, player, finalBoss, null, player.getMap(), assistant, new GeminiEvaluationStrategy());
         battle.startFinalBossBattle();
 
-        if (player.getHp() > 0) {
-            System.out.println("Gefeliciteerd! Je hebt de eindbaas verslagen en de NAVO-top gestopt!");
+        if (player.getHp() > 0) 
+            System.out.println("Gefeliciteerd! Je hebt Obama verslagen en de NAVO-Top gestopt!");
             Epilogue.showWin(scanner);
             SaveManager.reset();
         } else {
-            System.out.println("Helaas, de eindbaas was te sterk. Game over.");
+            System.out.println("Helaas, Obama was te sterk. Game over.");
         }
     }
 } 
