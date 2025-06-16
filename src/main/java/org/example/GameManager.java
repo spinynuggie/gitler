@@ -184,7 +184,7 @@ public class GameManager {
         battle.startFinalBossBattle();
 
         if (player.getHp() > 0) {
-            System.out.println("Gefeliciteerd! Je hebt de eindbaas verslagen en het spel uitgespeeld!");
+            System.out.println("Gefeliciteerd! Je hebt de eindbaas verslagen en de navo top gestopt!");
             Epilogue.showWin(scanner);
             SaveManager.reset();
         } else {
