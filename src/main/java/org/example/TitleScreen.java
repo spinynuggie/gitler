@@ -37,6 +37,13 @@ public class TitleScreen {
             }
             switch (keuze) {
                 case "1":
+                    // If no save exists, show prologue and create a new player
+                    if (player == null) {
+                        Prologue prologue = new Prologue();
+                        prologue.show(scanner);
+                        player = new Player(STARTING_HP);
+                        SaveManager.save(player);
+                    }
                     // start the game with whatever Player we currently have
                     return player;
 
@@ -50,11 +57,9 @@ public class TitleScreen {
                     if (scanner.nextLine().trim().equalsIgnoreCase("y")) {
                         // delete old save
                         SaveManager.reset();
-                        // re-initialize to starting HP
-                        player = new Player(STARTING_HP);
-                        // immediately save this fresh state
-                        SaveManager.save(player);
-                        System.out.printf(Messages.RESET_VOLTOOID, player.getHp());
+                        player = null;
+                        System.out.println("🗑️  Save gewist. Start een nieuw spel om opnieuw te beginnen!");
+                        System.exit(0);
                     }
                     break;
 
