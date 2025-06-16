@@ -6,7 +6,9 @@ import org.example.item.Sword;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -14,11 +16,12 @@ public class Player implements Serializable {
     @Serial private static final long serialVersionUID = 1L;
     public int currentRoom;
     public int score;
-    public int hp;
+    private int hp;
     public int stage;
     public Set<Integer> completedRooms = new HashSet<>();
     private GameMap map;
     private final Inventory inventory;
+    private transient List<PlayerObserver> observers = new ArrayList<>();
 
     public Player(int startHp) {
         this.inventory = new Inventory();
@@ -97,5 +100,38 @@ public class Player implements Serializable {
             getInventory().addItem(new Sword());
             System.out.println(Messages.ZWAARD_GEVONDEN);
         }
+    }
+
+    public void addObserver(PlayerObserver observer) {
+        observers.add(observer);
+    }
+
+    public void removeObserver(PlayerObserver observer) {
+        observers.remove(observer);
+    }
+
+    private void notifyObservers() {
+        for (PlayerObserver observer : observers) {
+            observer.update(this);
+        }
+    }
+
+    public void takeDamage(int amount) {
+        this.hp = Math.max(0, this.hp - amount);
+        notifyObservers();
+    }
+
+    public void setHp(int hp) {
+        this.hp = hp;
+        notifyObservers();
+    }
+
+    public int getHp() {
+        return hp;
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        observers = new ArrayList<>();
     }
 }

@@ -1,6 +1,6 @@
 package org.example;
 
-public class FunnyHintProvider implements HintProvider {
+public class FunnyHintProvider extends AbstractHintProvider {
     private static final String FUNNY_HINT_PROMPT = """
 ### ROL
 Je bent een grappige Scrum-coach die spelers van een educatieve game vermaakt met humoristische hints.
@@ -41,7 +41,7 @@ Antwoord uitsluitend met de hint-zin; geen toelichting of metadata.
 """;
 
     @Override
-    public String getHint(String question) {
-        return GeminiService.askGemini(FUNNY_HINT_PROMPT + question);
+    protected String getPrompt() {
+        return FUNNY_HINT_PROMPT;
     }
 }

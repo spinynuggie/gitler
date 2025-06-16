@@ -54,7 +54,7 @@ public class TitleScreen {
                         player = new Player(STARTING_HP);
                         // immediately save this fresh state
                         SaveManager.save(player);
-                        System.out.printf(Messages.RESET_VOLTOOID, player.hp);
+                        System.out.printf(Messages.RESET_VOLTOOID, player.getHp());
                     }
                     break;
 

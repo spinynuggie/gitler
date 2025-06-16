@@ -46,21 +46,8 @@ public class Room implements Serializable {
         return this.item != null;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    // Simplified play method that only handles evaluation
-    public boolean evaluateAnswer(String answer, String currentVraag) {
-        if (answer.equals("1234")) { // Keep debug/testing shortcut
-            return true;
-        }
-
-        String fb = evaluator.evaluate(currentVraag, answer);
-        String[] parts = fb.split(":", 2);
-        boolean correct = parts[0].equals("GOED");
-        System.out.println(fb);
-        return correct;
+    public EvaluationStrategy getEvaluator() {
+        return evaluator;
     }
 
     // Factory method

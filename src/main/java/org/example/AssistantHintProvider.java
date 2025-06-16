@@ -1,16 +1,15 @@
 package org.example;
 
-public class AssistantHintProvider implements HintProvider {
-    private static final String ASSISTANT_HINT_PROMPT = """
-            Je bent een Scrum-master die een junior teamlid een hint geeft.
-            Geef een hint voor de volgende vraag, maar geef niet het antwoord.
-            De hint moet in het Nederlands zijn en niet meer dan 15 woorden.
-            De vraag is: "{QUESTION}"
-            """;
+public class AssistantHintProvider extends AbstractHintProvider {
 
+    private static final String ASSISTANT_HINT_PROMPT = """
+            Jij bent een AI-assistent in een educatieve Scrum-game.
+            Geef een directe, nuttige hint voor de volgende vraag.
+            De speler heeft specifiek om jouw hulp gevraagd.
+            VRAAG:
+            """;
     @Override
-    public String getHint(String question) {
-        String prompt = ASSISTANT_HINT_PROMPT.replace("{QUESTION}", question);
-        return GeminiService.askGemini(prompt);
+    protected String getPrompt() {
+        return ASSISTANT_HINT_PROMPT;
     }
 } 

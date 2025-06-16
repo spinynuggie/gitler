@@ -12,6 +12,8 @@ public class Battle {
     private final Monster monster;
     private final Room room;
     private final GameMap gameMap;
+    private final Assistant assistant;
+    private final EvaluationStrategy evaluator;
 
     public enum BattleResult {
         WIN,
@@ -19,12 +21,14 @@ public class Battle {
         FLEE
     }
 
-    public Battle(Scanner scanner, Player player, Monster monster, Room room, GameMap gameMap) {
+    public Battle(Scanner scanner, Player player, Monster monster, Room room, GameMap gameMap, Assistant assistant, EvaluationStrategy evaluator) {
         this.scanner = scanner;
         this.player = player;
         this.monster = monster;
         this.room = room;
         this.gameMap = gameMap;
+        this.assistant = assistant;
+        this.evaluator = evaluator;
     }
 
     public BattleResult start() {
@@ -50,7 +54,7 @@ public class Battle {
                  vraagIndex++;
             }
 
-            if (player.hp <= 0) {
+            if (player.getHp() <= 0) {
                 return BattleResult.DEFEAT;
             }
         }
@@ -85,7 +89,7 @@ public class Battle {
                 vraagIndex++;
             }
 
-            if (player.hp <= 0) {
+            if (player.getHp() <= 0) {
                 return; // Exit battle if player is defeated
             }
         }
@@ -105,7 +109,7 @@ public class Battle {
 
     private enum TurnResult { FOUGHT, FLED, CHECKED, JOKER_USED }
 
-    private TurnResult handleTurn(String vraag, boolean isFinalBoss) {
+    public TurnResult handleTurn(String vraag, boolean isFinalBoss) {
         while (true) {
             System.out.println(Messages.WAT_WIL_JE_DOEN);
             System.out.println(Messages.OPTIE_FIGHT);
@@ -134,18 +138,31 @@ public class Battle {
     }
 
     private void handleFight(String vraag) {
+        String answer = getPlayerAnswer(vraag);
+        if (answer == null) return; // Joker used, turn skipped
+
+        if (answer.equals("1234")) {
+            System.out.println("DEBUG: Monster verslagen met cheatcode.");
+            monster.takeDamage(999);
+            return;
+        }
+
+        boolean correct = evaluateAnswer(vraag, answer);
+
+        if (correct) {
+            processCorrectAnswer();
+        } else {
+            processIncorrectAnswer(vraag);
+        }
+    }
+
+    private String getPlayerAnswer(String vraag) {
         System.out.println(Messages.ASSISTANT_INFO);
         System.out.println("\n— " + vraag + " —");
         String answer = scanner.nextLine().trim();
 
-        if (answer.equals("1234")) {
-            System.out.println("DEBUG: Monster verslagen met cheatcode.");
-            monster.takeDamage(999); // Geef genoeg schade om elk monster te verslaan
-            return;
-        } else if (answer.equalsIgnoreCase("gebruik assistent")) {
-            HintProvider assistantProvider = new AssistantHintProvider();
-            String hint = assistantProvider.getHint(vraag);
-            System.out.println("[Gemini Hint] " + hint);
+        if (answer.equalsIgnoreCase("gebruik assistent")) {
+            assistant.activate(vraag);
             System.out.print("Typ je antwoord: ");
             answer = scanner.nextLine().trim();
         }
@@ -153,50 +170,48 @@ public class Battle {
         if (answer.equalsIgnoreCase("joker")) {
             Player.JokerResult answerJokerResult = player.vraagEnVerwerkJoker(scanner, "vraag");
             if (answerJokerResult == Player.JokerResult.GEBRUIKT) {
-                return;
+                return null; // Signal that the turn is skipped
             } else if (answerJokerResult == Player.JokerResult.GEEN_JOKER_MEER) {
                 System.out.print("Typ je antwoord: ");
                 answer = scanner.nextLine().trim();
             }
         }
+        return answer;
+    }
 
-        boolean correct;
-        if (room != null) {
-            correct = room.evaluateAnswer(answer, vraag);
+    private boolean evaluateAnswer(String vraag, String answer) {
+        String evaluation = this.evaluator.evaluate(vraag, answer);
+        System.out.println(evaluation);
+        return evaluation.startsWith("GOED");
+    }
+
+    private void processCorrectAnswer() {
+        int damage = player.getAttackDamage();
+        monster.takeDamage(damage);
+
+        if (!monster.isAlive()) {
+            System.out.println(Messages.MONSTER_VERSLAGEN);
         } else {
-            // Final boss battle, no specific room. Use a generic evaluation.
-            String evaluation = new GeminiEvaluationStrategy().evaluate(vraag, answer);
-            System.out.println(evaluation);
-            correct = evaluation.startsWith("GOED");
+            System.out.println(Messages.MONSTER_LEEFT);
         }
-        
-        if (correct) {
-            int damage = player.getAttackDamage();
-            monster.takeDamage(damage);
+    }
 
-            if (!monster.isAlive()) {
-                System.out.println(Messages.MONSTER_VERSLAGEN);
-                // Status updates (score, completedRooms, etc.) are now handled in Game.java
-            } else {
-                System.out.println(Messages.MONSTER_LEEFT);
-            }
-        } else {
-            monster.hinder(player);
-            if (vraag != null) {
-                HintSystem.maybeGiveHint(scanner, vraag);
-            }
+    private void processIncorrectAnswer(String vraag) {
+        monster.hinder(player);
+        if (vraag != null) {
+            HintSystem.maybeGiveHint(scanner, vraag);
+        }
+        SaveManager.save(player);
+
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        if (player.getHp() <= 0) {
+            System.out.println(Messages.GAME_OVER);
             SaveManager.save(player);
-
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            if (player.hp <= 0) {
-                System.out.println(Messages.GAME_OVER);
-                SaveManager.save(player);
-            }
         }
     }
 } 
