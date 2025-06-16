@@ -12,11 +12,5 @@ public class Assistant {
         // 1. Toon een hint
         String hint = hintProvider.getHint(question);
         System.out.println("[Gemini Hint] " + hint);
-
-        // 2. Voeg een educatief hulpmiddel toe (placeholder)
-        System.out.println("[Educatief Hulpmiddel] Een stappenplan om deze vraag te beantwoorden is aan je notities toegevoegd.");
-
-        // 3. Toon een motiverende boodschap
-        System.out.println("[Motivatie] Je denkt als een echte product owner!");
     }
 } 

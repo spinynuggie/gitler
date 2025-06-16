@@ -13,6 +13,7 @@ public class Battle {
     private final Room room;
     private final GameMap gameMap;
     private final Assistant assistant;
+    private final EvaluationStrategy evaluator;
 
     public enum BattleResult {
         WIN,
@@ -20,13 +21,14 @@ public class Battle {
         FLEE
     }
 
-    public Battle(Scanner scanner, Player player, Monster monster, Room room, GameMap gameMap, Assistant assistant) {
+    public Battle(Scanner scanner, Player player, Monster monster, Room room, GameMap gameMap, Assistant assistant, EvaluationStrategy evaluator) {
         this.scanner = scanner;
         this.player = player;
         this.monster = monster;
         this.room = room;
         this.gameMap = gameMap;
         this.assistant = assistant;
+        this.evaluator = evaluator;
     }
 
     public BattleResult start() {
@@ -52,7 +54,7 @@ public class Battle {
                  vraagIndex++;
             }
 
-            if (player.hp <= 0) {
+            if (player.getHp() <= 0) {
                 return BattleResult.DEFEAT;
             }
         }
@@ -87,7 +89,7 @@ public class Battle {
                 vraagIndex++;
             }
 
-            if (player.hp <= 0) {
+            if (player.getHp() <= 0) {
                 return; // Exit battle if player is defeated
             }
         }
@@ -178,14 +180,9 @@ public class Battle {
     }
 
     private boolean evaluateAnswer(String vraag, String answer) {
-        if (room != null) {
-            return room.evaluateAnswer(answer, vraag);
-        } else {
-            // Final boss battle, no specific room. Use a generic evaluation.
-            String evaluation = new GeminiEvaluationStrategy().evaluate(vraag, answer);
-            System.out.println(evaluation);
-            return evaluation.startsWith("GOED");
-        }
+        String evaluation = this.evaluator.evaluate(vraag, answer);
+        System.out.println(evaluation);
+        return evaluation.startsWith("GOED");
     }
 
     private void processCorrectAnswer() {
@@ -212,7 +209,7 @@ public class Battle {
             Thread.currentThread().interrupt();
         }
 
-        if (player.hp <= 0) {
+        if (player.getHp() <= 0) {
             System.out.println(Messages.GAME_OVER);
             SaveManager.save(player);
         }

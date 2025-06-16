@@ -64,7 +64,7 @@ public class MapGenerator {
         List<String> CATEGORIES = new ArrayList<>(Questions.allCategories());
         for (int i = 0; i < roomIds.size(); i++) {
             int id = roomIds.get(i);
-            String opening = buildOpeningString(id, idSet);
+            String opening = buildOpeningString(id, idSet, exitId);
             String category = CATEGORIES.get(i % CATEGORIES.size());
             List<Question> vragen = new ArrayList<>(Questions.byCategory(category));
             Collections.shuffle(vragen, rnd);
@@ -113,12 +113,13 @@ public class MapGenerator {
         return new ArrayList<>(connected);
     }
 
-    private String buildOpeningString(int id, Set<Integer> idSet) {
+    private String buildOpeningString(int id, Set<Integer> idSet, int exitId) {
         StringBuilder sb = new StringBuilder(4);
-        if (idSet.contains(id - gridSize)) sb.append('N');
-        if (idSet.contains(id + gridSize)) sb.append('Z');
-        if ((id - 1) % gridSize != 0 && idSet.contains(id - 1)) sb.append('W');
-        if (id % gridSize != 0 && idSet.contains(id + 1)) sb.append('O');
+        // Only check grid boundaries - all interior walls are open
+        if (id > gridSize) sb.append('N');  // Not on top edge
+        if (id % gridSize != 0) sb.append('O');  // Not on right edge
+        if (id <= gridSize * (gridSize - 1)) sb.append('Z');  // Not on bottom edge
+        if ((id - 1) % gridSize != 0) sb.append('W');  // Not on left edge
         return sb.toString();
     }
 
