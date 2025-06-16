@@ -178,13 +178,13 @@ public class GameManager {
 
     private void finalBossBattle(Scanner scanner, Player player) {
         System.out.println("De eindbaas verschijnt!");
-        Monster finalBoss = new Monster("Eindbaas", 5, 25, new AttackStrategy());
+        Monster finalBoss = new Monster("Barack Obama", 5, 25, new AttackStrategy());
         Assistant assistant = new Assistant(new AssistantHintProvider());
         Battle battle = new Battle(scanner, player, finalBoss, null, player.getMap(), assistant, new GeminiEvaluationStrategy());
         battle.startFinalBossBattle();
 
         if (player.getHp() > 0) {
-            System.out.println("Gefeliciteerd! Je hebt de eindbaas verslagen en de navo top gestopt!");
+            System.out.println("Gefeliciteerd! Je hebt de eindbaas verslagen en de NAVO-top gestopt!");
             Epilogue.showWin(scanner);
             SaveManager.reset();
         } else {

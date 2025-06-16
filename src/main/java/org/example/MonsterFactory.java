@@ -5,13 +5,13 @@ import java.util.Random;
 
 public class MonsterFactory {
     private static final List<MonsterTemplate> MONSTER_TEMPLATES = List.of(
-        new MonsterTemplate("Scrum Gremlin", 2, 3),
-        new MonsterTemplate("Planning Orc", 4, 5),
-        new MonsterTemplate("Feedback Fiend", 3, 4),
-        new MonsterTemplate("Generic Goblin", 3, 4),
-        new MonsterTemplate("Kanban Kobold", 2, 3),
-        new MonsterTemplate("Retro Wraith", 3, 5),
-        new MonsterTemplate("Agile Imp", 2, 4)
+            new MonsterTemplate("Geert Wilders", 2, 3),
+            new MonsterTemplate("Joseph Stalin", 4, 5),
+            new MonsterTemplate("Thierry Baudet", 3, 4),
+            new MonsterTemplate("Joe Biden", 3, 4),
+            new MonsterTemplate("Donald Trump", 2, 3),
+            new MonsterTemplate("Dik Schoof", 3, 5),
+            new MonsterTemplate("Mark Rutte", 2, 4)
     );
     private static final Random RANDOM = new Random();
 
