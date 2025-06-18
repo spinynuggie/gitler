@@ -12,7 +12,7 @@ public class MonsterFactory {
             new MonsterTemplate("Donald Trunt", 3, 2),
             new MonsterTemplate("Dik Schoen", 2, 4),
             new MonsterTemplate("Mark Ruttel", 3, 3),
-            new MonsterTemplate("Vladimir Input", 4, 4) // FINAL BOSS 🔥
+            new MonsterTemplate("Vladimir Input", 4, 4)
     );
     private static final Random RANDOM = new Random();
 

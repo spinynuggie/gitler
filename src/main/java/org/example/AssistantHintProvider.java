@@ -12,4 +12,7 @@ public class AssistantHintProvider extends AbstractHintProvider {
     protected String getPrompt() {
         return ASSISTANT_HINT_PROMPT;
     }
-} 
+}
+
+
+
